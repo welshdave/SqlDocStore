@@ -29,13 +29,14 @@
 
         protected override async Task<IDocumentSession> CreateSessionInternal(CancellationToken token)
         {
-            //TODO: check sql version.
+            await CheckSupportedSqlVersion(token);
             return new MsSqlDocumentSession(_createConnection, this);
         }
 
         protected override async Task SetupDatabase(CancellationToken token)
         {
             if (Settings.SchemaCreation == SchemaCreation.None) return;
+            await CheckSupportedSqlVersion(token);
             using (var connection = _createConnection())
             {
                 await connection.OpenAsync(token).ConfigureAwait(false);
@@ -51,7 +52,19 @@
             }
         }
 
-        private bool SupportedSqlVersion(string serverVersion)
+        private async Task CheckSupportedSqlVersion(CancellationToken token)
+        {
+            using (var connection = _createConnection())
+            {
+                await connection.OpenAsync(token).ConfigureAwait(false);
+                if (!SupportedSqlVersion(connection.ServerVersion))
+                {
+                    throw new UnsupportedDatabaseException($"This version of Sql Server is not supported. A version of {MinimumSqlVersion} or above is required");
+                }
+            }
+        }
+
+        private static bool SupportedSqlVersion(string serverVersion)
         {
             var serverVersionDetails = serverVersion.Split(new[] {"."}, StringSplitOptions.None);
             var versionNumber = int.Parse(serverVersionDetails[0]);
