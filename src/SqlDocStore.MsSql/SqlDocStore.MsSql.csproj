@@ -49,9 +49,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Linq\MsSqlQueryProvider.cs" />
     <Compile Include="MsSqlDocumentSession.cs" />
     <Compile Include="MsSqlDocumentStore.cs" />
-    <Compile Include="MsSqlQueryParser.cs" />
+    <Compile Include="Linq\MsSqlQueryParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sql\Scripts.cs" />
   </ItemGroup>
