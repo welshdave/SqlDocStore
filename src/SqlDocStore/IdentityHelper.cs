@@ -3,19 +3,18 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Dynamic;
     using System.Linq;
-    using System.Net;
     using System.Reflection;
-    using System.Runtime.Remoting.Messaging;
 
     public static class IdentityHelper
     {
         private const string Identity = "Id";
 
-        private static readonly ConcurrentDictionary<Type, MemberInfo> _propertyCache =
+        private static readonly ConcurrentDictionary<Type, MemberInfo> PropertyCache =
             new ConcurrentDictionary<Type, MemberInfo>();
 
-        private static readonly ConcurrentDictionary<Type, object> _defaultValues =
+        private static readonly ConcurrentDictionary<Type, object> DefaultValues =
             new ConcurrentDictionary<Type, object>();
 
         private static readonly List<Type> AllowedTypes = new List<Type>
@@ -29,6 +28,11 @@
         public static object GetIdFromDocument<T>(T document)
         {
             ValidateDocumentId(document);
+            if (document is IDynamicMetaObjectProvider)
+            {
+                return ((dynamic) document).Id;
+            }
+
             var info = GetIdProperty(document);
 
             if (info == null)
@@ -38,6 +42,12 @@
 
         internal static void ValidateDocumentId<T>(T document)
         {
+            if (document is IDynamicMetaObjectProvider)
+            {
+                ValidateDynamicDocumentId(document);
+                return;
+            }
+
             var info = GetIdProperty(document);
 
             if (info == null)
@@ -49,13 +59,25 @@
                     $"Identity Property {Identity} for Type {typeof(T)} must be one of these Types: {AllowedTypes.Select(x => x.FullName).Aggregate((i, j) => i + "," + j)}");
             }
 
-            if (!_defaultValues.TryGetValue(info.PropertyType, out object defaultValue))
+            if (!DefaultValues.TryGetValue(info.PropertyType, out object defaultValue))
             {
                 defaultValue = info.PropertyType.IsValueType ? Activator.CreateInstance(info.PropertyType) : null;
-                _defaultValues.GetOrAdd(info.PropertyType, defaultValue);
+                DefaultValues.GetOrAdd(info.PropertyType, defaultValue);
             }
             if (defaultValue != null && defaultValue.Equals(info.GetValue(document)))
                 throw new InvalidOperationException($"Identity property {Identity} must be of non-default value");
+        }
+
+        private static void ValidateDynamicDocumentId(dynamic document)
+        {   //TODO: proper type/default value checking.
+            try
+            {
+                var id = document.Id;
+            }
+            catch
+            {
+                throw new InvalidOperationException($"Dynamic document does not have Identity property {Identity}");
+            }
         }
 
         private static PropertyInfo GetIdProperty(object document)
@@ -65,10 +87,10 @@
             
             try
             {
-                if (!_propertyCache.TryGetValue(type, out info))
+                if (!PropertyCache.TryGetValue(type, out info))
                 {
                     info = type.GetProperties().Single(p => p.Name == Identity);
-                    _propertyCache.GetOrAdd(type, info);
+                    PropertyCache.GetOrAdd(type, info);
                 }
             }
             catch

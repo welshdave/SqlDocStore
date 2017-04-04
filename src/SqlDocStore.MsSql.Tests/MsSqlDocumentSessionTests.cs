@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Data.SqlClient;
+    using System.Dynamic;
     using System.Linq;
     using System.Threading.Tasks;
     using Ploeh.AutoFixture;
@@ -133,6 +134,82 @@
             }
         }
 
+        [Theory]
+        [MemberData(nameof(GetDocuments))]
+        public async Task should_load_dynamic_document_by_id(object document)
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore())
+                {
+                    var session = await store.CreateSession();
+                    session.Store(document);
+                    await session.SaveChanges();
+                    var id = IdentityHelper.GetIdFromDocument(document);
+                    dynamic doc = null;
+                    
+                    switch (id)
+                    {
+                        case int i:
+                            doc = await session.Load<dynamic>(i);
+                            break;
+                        case long l:
+                            doc = await session.Load<dynamic>(l);
+                            break;
+                        case string s:
+                            doc = await session.Load<dynamic>(s);
+                            break;
+                        case Guid g:
+                            doc = await session.Load<dynamic>(g);
+                            break;  
+                    }
+
+                    ((string)doc.Id.ToString()).ShouldBe(id.ToString());
+
+                }
+            }
+        }
+
+        [Fact]
+        public async Task should_load_document_by_guid_id()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore())
+                {
+                    var session = await store.CreateSession();
+                    var autofixture = new Fixture();
+                    var person = autofixture.Create<Person>();
+                    session.Store(person);
+                    await session.SaveChanges();
+
+                    var doc = await session.Load<Person>(person.Id);
+                    
+                    doc.Id.ShouldBe(person.Id);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task should_load_document_by_int_id()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore())
+                {
+                    var session = await store.CreateSession();
+                    var autofixture = new Fixture();
+                    var simple = autofixture.Create<SimpleDoc>();
+                    session.Store(simple);
+                    await session.SaveChanges();
+
+                    var doc = await session.Load<SimpleDoc>(simple.Id);
+
+                    doc.Id.ShouldBe(simple.Id);
+                }
+            }
+        }
+
         private static IEnumerable<object[]> GetDocuments()
         {
             var fixture = new Fixture();
@@ -140,6 +217,11 @@
             yield return new object[] { fixture.Create<Person>() };
             yield return new object[] { fixture.Create<Company>() };
             yield return new object[] { fixture.Create<AnotherDoc>() };
+            yield return new object[] { new {Id = Guid.NewGuid(), Title = $"Title{Guid.NewGuid()}" }};
+            dynamic doc = new ExpandoObject();
+            doc.Id = (new Random()).Next();
+            doc.Title = $"Title{Guid.NewGuid()}";
+            yield return new object[] { doc };
         }
     }
 }

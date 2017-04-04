@@ -77,7 +77,25 @@
             return QueryInternal<T>();
         }
 
-        public Task<T> Load<T>(object id, CancellationToken token = new CancellationToken())
+        public Task<T> Load<T>(int id, CancellationToken token = new CancellationToken())
+        {
+            CheckNotDisposed();
+            return LoadInternal<T>(id, token);
+        }
+
+        public Task<T> Load<T>(long id, CancellationToken token = new CancellationToken())
+        {
+            CheckNotDisposed();
+            return LoadInternal<T>(id, token);
+        }
+
+        public Task<T> Load<T>(Guid id, CancellationToken token = new CancellationToken())
+        {
+            CheckNotDisposed();
+            return LoadInternal<T>(id, token);
+        }
+
+        public Task<T> Load<T>(string id, CancellationToken token = new CancellationToken())
         {
             CheckNotDisposed();
             return LoadInternal<T>(id, token);

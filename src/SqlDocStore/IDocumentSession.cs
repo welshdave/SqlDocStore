@@ -28,6 +28,12 @@
 
         IQueryable<T> Query<T>();
 
-        Task<T> Load<T>(object id, CancellationToken token = default(CancellationToken));
+        Task<T> Load<T>(int id, CancellationToken token = default(CancellationToken));
+
+        Task<T> Load<T>(long id, CancellationToken token = default(CancellationToken));
+
+        Task<T> Load<T>(Guid id, CancellationToken token = default(CancellationToken));
+
+        Task<T> Load<T>(string id, CancellationToken token = default(CancellationToken));
     }
 }

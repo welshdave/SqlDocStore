@@ -21,6 +21,7 @@
         internal string CreateTable => GetScript(nameof(CreateTable));
         internal string UpsertDocument => GetScript(nameof(UpsertDocument));
         internal string DeleteDocument => GetScript(nameof(DeleteDocument));
+        internal string GetDocumentById => GetScript(nameof(GetDocumentById));
        
         private string GetScript(string name)
         {

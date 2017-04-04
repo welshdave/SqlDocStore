@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Data.SqlClient;
+    using System.Dynamic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -87,9 +88,28 @@
             }
         }
 
-        protected override Task<T> LoadInternal<T>(object id, CancellationToken token)
+        protected override async Task<T> LoadInternal<T>(object id, CancellationToken token)
         {
-            throw new NotImplementedException();
+            using (var connection = _createConnection())
+            {
+                await connection.OpenAsync(token).ConfigureAwait(false);
+                using (var command = new SqlCommand(_scripts.GetDocumentById, connection))
+                {
+                    command.Parameters.AddWithValue("@id", id.ToString());
+                    var result = await command.ExecuteScalarAsync(token);
+                    if (result == null) return default(T);
+                    try
+                    {
+                        var doc = SimpleJson.DeserializeObject<T>(result.ToString());
+                        ChangeTracker.Track(doc);
+                        return doc;
+                    }
+                    catch (FormatException)
+                    {
+                        throw new InvalidCastException($"Unable to cast document with Id {id} to Type {typeof(T)}");
+                    }
+                }
+            }
         }
     }
 }
