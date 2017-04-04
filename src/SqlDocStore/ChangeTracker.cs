@@ -10,9 +10,6 @@
         private readonly ConcurrentDictionary<object, TrackedDocument> _documents =
             new ConcurrentDictionary<object, TrackedDocument>();
 
-        private readonly ConcurrentDictionary<object, object> _originalDocuments =
-            new ConcurrentDictionary<object, object>();
-
         public IEnumerable<TrackedDocument> Changes => _documents.Values.Where(x => x.State != DocumentState.Unchanged);
 
         public IEnumerable<object> Inserts
@@ -48,12 +45,16 @@
         public void Track<T>(T document)
         {
             var id = IdentityHelper.GetIdFromDocument(document);
-            _documents.GetOrAdd(id, new TrackedDocument
+            var trackedDocument = new TrackedDocument
             {
                 Document = document,
                 Type = typeof(T),
                 State = DocumentState.Unchanged
-            });
+            };
+            _documents.AddOrUpdate(
+                id,
+                trackedDocument,
+                (key, oldValue) => trackedDocument);
         }
 
         public void Insert<T>(T document)
@@ -70,12 +71,7 @@
         public void Update<T>(T document)
         {
             var id = IdentityHelper.GetIdFromDocument(document);
-            if (_documents.TryGetValue(id, out TrackedDocument trackedDocument))
-            {
-                if (trackedDocument.State == DocumentState.Unchanged)
-                    _originalDocuments.GetOrAdd(id, trackedDocument.Document);
-            }
-            else
+            if (!_documents.TryGetValue(id, out TrackedDocument trackedDocument))
             {
                 throw new InvalidOperationException("Can't update unknown document");
             }
@@ -83,18 +79,13 @@
             {
                 Document = document,
                 State = DocumentState.Modified,
-                Type = trackedDocument.Type
+                Type = typeof(T)
             }, trackedDocument);
         }
 
         public void DeleteById(object id)
         {
-            if (_documents.TryGetValue(id, out TrackedDocument trackedDocument))
-            {
-                if (trackedDocument.State == DocumentState.Unchanged)
-                    _originalDocuments.GetOrAdd(id, trackedDocument.Document);
-            }
-            else
+            if (!_documents.TryGetValue(id, out TrackedDocument trackedDocument))
             {
                 throw new InvalidOperationException("Can't delete unknown document");
             }
@@ -119,30 +110,6 @@
                 document.Value.State = DocumentState.Unchanged;
             }
         }
-
-        public void ClearChanges()
-        {
-            foreach (var id in _documents.Keys)
-            {
-                switch (_documents[id].State)
-                {
-                    case DocumentState.Added:
-                        _documents.TryRemove(id, out TrackedDocument doc);
-                        break;
-                    case DocumentState.Modified:
-                    case DocumentState.Deleted:
-                        if(_originalDocuments.TryGetValue(id, out object originalDocument))
-                        {
-                            _documents.TryUpdate(id, new TrackedDocument()
-                            {
-                                Document = originalDocument,
-                                State = DocumentState.Unchanged,
-                                Type = _documents[id].Type
-                            }, _documents[id]);
-                        }
-                        break;
-                }
-            }
-        }
+        
     }
 }

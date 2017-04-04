@@ -157,27 +157,7 @@
             changeTracker.Delete(simple);
             changeTracker.DeletionsFor<SimpleDoc>().Count().ShouldBe(1);
         }
-
-        [Fact]
-        public void should_clear_changes()
-        {
-            var changeTracker = GetChangeTracker();
-            var fixture = new Fixture();
-            var person = fixture.Create<Person>();
-            changeTracker.Track(person);
-            person.FullName = "test";
-            changeTracker.Update(person);
-            changeTracker.Delete(person);
-            var simple = fixture.Create<SimpleDoc>();
-            changeTracker.Track(simple);
-            simple.Description = "test";
-            changeTracker.Update(simple);
-            var simple2 = fixture.Create<SimpleDoc>();
-            changeTracker.Insert(simple2);
-            changeTracker.ClearChanges();
-            changeTracker.Changes.ShouldBeEmpty();
-        }
-
+        
         [Fact]
         public void should_not_track_invalid_doc()
         {
