@@ -44,6 +44,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConcurrencyException.cs" />
+    <Compile Include="ConcurrencyModel.cs" />
+    <Compile Include="DataStoreException.cs" />
+    <Compile Include="DeletedDocument.cs" />
     <Compile Include="DisposableBase.cs" />
     <Compile Include="DocumentSessionBase.cs" />
     <Compile Include="DocumentStoreBase.cs" />
@@ -58,6 +62,7 @@
     <Compile Include="SimpleJson.cs" />
     <Compile Include="ChangeTracker.cs" />
     <Compile Include="TrackedDocument.cs" />
+    <Compile Include="DocumentIdExistsException.cs" />
     <Compile Include="UnsupportedDatabaseException.cs" />
   </ItemGroup>
   <ItemGroup>

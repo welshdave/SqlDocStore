@@ -53,16 +53,38 @@
             if (info == null)
                 throw new InvalidOperationException($"Type {typeof(T)} does not have Identity property {Identity}");
 
-            if (!AllowedTypes.Contains(info.PropertyType))
+            var propertyType = info.PropertyType;
+
+            if(propertyType == typeof(object)) { 
+                var val = info.GetValue(document);
+                switch (val)
+                {
+                    case string s:
+                        propertyType = typeof(string);
+                        break;
+                    case int i:
+                        propertyType = typeof(int);
+                        break;
+                    case long l:
+                        propertyType = typeof(long);
+                        break;
+                    case Guid g:
+                        propertyType = typeof(Guid);
+                        break;
+                }
+            }
+
+
+            if (!AllowedTypes.Contains(propertyType))
             {
                 throw new InvalidOperationException(
                     $"Identity Property {Identity} for Type {typeof(T)} must be one of these Types: {AllowedTypes.Select(x => x.FullName).Aggregate((i, j) => i + "," + j)}");
             }
 
-            if (!DefaultValues.TryGetValue(info.PropertyType, out object defaultValue))
+            if (!DefaultValues.TryGetValue(propertyType, out object defaultValue))
             {
-                defaultValue = info.PropertyType.IsValueType ? Activator.CreateInstance(info.PropertyType) : null;
-                DefaultValues.GetOrAdd(info.PropertyType, defaultValue);
+                defaultValue = propertyType.IsValueType ? Activator.CreateInstance(propertyType) : null;
+                DefaultValues.GetOrAdd(propertyType, defaultValue);
             }
             if (defaultValue != null && defaultValue.Equals(info.GetValue(document)))
                 throw new InvalidOperationException($"Identity property {Identity} must be of non-default value");

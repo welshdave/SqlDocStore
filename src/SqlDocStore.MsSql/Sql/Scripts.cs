@@ -19,9 +19,12 @@
 
         internal string CreateNonDefaultSchema => GetScript(nameof(CreateNonDefaultSchema));
         internal string CreateTable => GetScript(nameof(CreateTable));
+        internal string InsertDocument => GetScript(nameof(InsertDocument));
+        internal string UpdateDocument => GetScript(nameof(UpdateDocument));
         internal string UpsertDocument => GetScript(nameof(UpsertDocument));
         internal string DeleteDocument => GetScript(nameof(DeleteDocument));
         internal string GetDocumentById => GetScript(nameof(GetDocumentById));
+        internal string PessimisticDeleteDocument => GetScript(nameof(PessimisticDeleteDocument));
        
         private string GetScript(string name)
         {

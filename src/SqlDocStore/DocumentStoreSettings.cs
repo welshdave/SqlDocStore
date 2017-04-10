@@ -12,6 +12,7 @@
             EnsureArg.IsNotNullOrWhiteSpace(connectionString);
             ConnectionString = connectionString;
             SchemaCreation = SchemaCreation.Create;
+            ConcurrencyModel = ConcurrencyModel.Optimistic;
         }
 
         public string ConnectionString { get; }
@@ -37,5 +38,7 @@
         }
 
         public SchemaCreation SchemaCreation { get; set; }
+
+        public ConcurrencyModel ConcurrencyModel { get; set; }
     }
 }

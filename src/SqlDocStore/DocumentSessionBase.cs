@@ -16,8 +16,8 @@
             typeof(Guid)
         };
 
-        protected readonly ChangeTracker ChangeTracker = new ChangeTracker();
-        
+        protected ChangeTracker ChangeTracker;
+
         public IDocumentStore DocumentStore { get; protected set; }
 
         public IEnumerable<ITrackedDocument> PendingChanges => ChangeTracker.Changes;
@@ -101,11 +101,11 @@
             return LoadInternal<T>(id, token);
         }
 
-        protected abstract void DeleteInternal<T>(T entity);
+        protected abstract void DeleteInternal<T>(T document);
 
         protected abstract void DeleteByIdInternal(object id);
 
-        protected abstract void StoreInternal<T>(T entity);
+        protected abstract void StoreInternal<T>(T document);
 
         protected abstract Task SaveChangesInternal(CancellationToken token);
 

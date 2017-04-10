@@ -15,18 +15,22 @@
         private readonly Func<SqlConnection> _createConnection;
         private readonly MsSqlQueryParser _parser = new MsSqlQueryParser();
         private readonly Scripts _scripts;
-
+        private readonly ConcurrencyModel _concurrencyModel;
+        private const int ConcurrencyError = 50001;
+        private const int DocumentExists = 50002;
 
         public MsSqlDocumentSession(Func<SqlConnection> createConnection, IDocumentStore store)
         {
             _createConnection = createConnection;
             DocumentStore = store;
             _scripts = new Scripts(DocumentStore.Settings.Schema, DocumentStore.Settings.Table);
+            _concurrencyModel = DocumentStore.Settings.ConcurrencyModel;
+            ChangeTracker = new ChangeTracker(_concurrencyModel);
         }
 
-        protected override void DeleteInternal<T>(T entity)
+        protected override void DeleteInternal<T>(T document)
         {
-            ChangeTracker.Delete(entity);
+            ChangeTracker.Delete(document);
         }
 
         protected override void DeleteByIdInternal(object id)
@@ -34,9 +38,17 @@
             ChangeTracker.DeleteById(id);
         }
 
-        protected override void StoreInternal<T>(T entity)
+        protected override void StoreInternal<T>(T document)
         {
-            ChangeTracker.Insert(entity);
+            if (_concurrencyModel == ConcurrencyModel.Pessimistic)
+            {
+                var id = IdentityHelper.GetIdFromDocument(document);
+                if (ChangeTracker.Documents.ContainsKey(id) && ChangeTracker.Documents[id].State != DocumentState.Added)
+                {
+                    ChangeTracker.Update(document);
+                }
+            }
+            ChangeTracker.Insert(document);
         }
 
         protected override async Task SaveChangesInternal(CancellationToken token)
@@ -45,38 +57,110 @@
             {
                 await connection.OpenAsync(token).ConfigureAwait(false);
                 var tran = connection.BeginTransaction();
-                foreach (var document in ChangeTracker.Inserts)
+
+                if (_concurrencyModel == ConcurrencyModel.Optimistic)
                 {
-                    var json = SimpleJson.SerializeObject(document);
-                    using (var command = new SqlCommand(_scripts.UpsertDocument, connection))
+                    foreach (var document in ChangeTracker.Inserts.Union(ChangeTracker.Updates))
                     {
-                        command.Transaction = tran;
-                        command.Parameters.AddWithValue("@document", json);
-                        await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                        var json = SimpleJson.SerializeObject(document);
+                        using (var command = new SqlCommand(_scripts.UpsertDocument, connection))
+                        {
+                            command.Transaction = tran;
+                            command.Parameters.AddWithValue("@document", json);
+                            await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                        }
+                    }
+                    foreach (var document in ChangeTracker.Deletions)
+                    {
+                        var id = IdentityHelper.GetIdFromDocument(document);
+                        using (var command = new SqlCommand(_scripts.DeleteDocument, connection))
+                        {
+                            command.Transaction = tran;
+                            command.Parameters.AddWithValue("@id", id.ToString());
+                            await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                        }
                     }
                 }
-                foreach (var document in ChangeTracker.Updates)
+                else
                 {
-                    var json = SimpleJson.SerializeObject(document);
-                    using (var command = new SqlCommand(_scripts.UpsertDocument, connection))
+                    foreach (var document in ChangeTracker.Inserts)
                     {
-                        command.Transaction = tran;
-                        command.Parameters.AddWithValue("@document", json);
-                        await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                        var json = SimpleJson.SerializeObject(document);
+                        var id = IdentityHelper.GetIdFromDocument(document);
+                        try
+                        {
+                            using (var command = new SqlCommand(_scripts.InsertDocument, connection))
+                            {
+                                command.Transaction = tran;
+                                command.Parameters.AddWithValue("@document", json);
+                                command.Parameters.AddWithValue("@etag", ChangeTracker.Documents[id].ETag);
+                                await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                            }
+                        }
+                        catch (SqlException ex)
+                        {
+                            if (ex.Number == DocumentExists)
+                            {
+                                throw new DocumentIdExistsException(ex.Message);
+                            }
+                            throw new DataStoreException("Error in underlying data store", ex);
+                        }
+                    }
+                    foreach (var document in ChangeTracker.Updates)
+                    {
+                        var json = SimpleJson.SerializeObject(document);
+                        var id = IdentityHelper.GetIdFromDocument(document);
+                        try
+                        {
+                            using (var command = new SqlCommand(_scripts.UpdateDocument, connection))
+                            {
+                                command.Transaction = tran;
+                                command.Parameters.AddWithValue("@document", json);
+                                command.Parameters.AddWithValue("@etag", ChangeTracker.Documents[id].ETag);
+                                var newETag = await command.ExecuteScalarAsync(token).ConfigureAwait(false);
+                                ChangeTracker.Documents[id].ETag = Guid.Parse(newETag.ToString());
+                            }
+                        }
+                        catch (SqlException ex)
+                        {
+                            if (ex.Number == ConcurrencyError)
+                            {
+                                throw new ConcurrencyException(ex.Message);
+                            }
+                            throw new DataStoreException("Error in underlying data store", ex);
+                        }
+                    }
+                    foreach (var document in ChangeTracker.Deletions)
+                    {
+                        var id = IdentityHelper.GetIdFromDocument(document);
+                        try
+                        {
+                            using (var command = new SqlCommand(_scripts.PessimisticDeleteDocument, connection))
+                            {
+                                command.Transaction = tran;
+                                command.Parameters.AddWithValue("@id", id.ToString());
+                                command.Parameters.AddWithValue("@etag", ChangeTracker.Documents[id].ETag);
+                                await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                            }
+                        }
+                        catch (SqlException ex)
+                        {
+                            if (ex.Number == ConcurrencyError)
+                            {
+                                throw new ConcurrencyException(ex.Message);
+                            }
+                            throw new DataStoreException("Error in underlying data store",ex);
+                        }
                     }
                 }
-                foreach (var document in ChangeTracker.Deletions)
-                {
-                    var id = IdentityHelper.GetIdFromDocument(document);
-                    using (var command = new SqlCommand(_scripts.DeleteDocument, connection))
-                    {
-                        command.Transaction = tran;
-                        command.Parameters.AddWithValue("@id", id.ToString());
-                        await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
-                    }
-                }
+                
                 tran.Commit();
-                ChangeTracker.MarkChangesSaved();
+                if (_concurrencyModel == ConcurrencyModel.Pessimistic)
+                {
+                    ChangeTracker.MarkChangesSaved();
+                    return;
+                }
+                ChangeTracker.Documents.Clear();
             }
         }
 
@@ -96,12 +180,14 @@
                 using (var command = new SqlCommand(_scripts.GetDocumentById, connection))
                 {
                     command.Parameters.AddWithValue("@id", id.ToString());
-                    var result = await command.ExecuteScalarAsync(token);
-                    if (result == null) return default(T);
+                    var reader = await command.ExecuteReaderAsync(token);
+                    if (!reader.HasRows) return default(T);
                     try
                     {
-                        var doc = SimpleJson.DeserializeObject<T>(result.ToString());
-                        ChangeTracker.Track(doc);
+                        reader.Read();
+                        var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
+                        var eTag = Guid.Parse(reader["ETag"].ToString());
+                        ChangeTracker.Track(doc,eTag);
                         return doc;
                     }
                     catch (FormatException)

@@ -66,9 +66,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MsSqlDocumentSessionTests.Pessimistic.cs" />
     <Compile Include="MsSqlDocumentStoreTests.cs" />
     <Compile Include="MsSqlDocumentStoreFixture.cs" />
-    <Compile Include="MsSqlDocumentSessionTests.cs" />
+    <Compile Include="MsSqlDocumentSessionTests.Optimistic.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

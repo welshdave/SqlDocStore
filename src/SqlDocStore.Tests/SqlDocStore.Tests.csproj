@@ -62,7 +62,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChangeTrackerTests.cs" />
+    <Compile Include="ChangeTrackerTests.OptimisticConcurrency.cs" />
+    <Compile Include="ChangeTrackerTests.PessimisticConcurrency.cs" />
     <Compile Include="Documents\AnotherDoc.cs" />
     <Compile Include="Documents\Company.cs" />
     <Compile Include="Documents\InvalidDoc.cs" />

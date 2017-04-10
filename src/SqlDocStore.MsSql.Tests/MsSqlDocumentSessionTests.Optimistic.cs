@@ -11,7 +11,7 @@
     using SqlDocStore.Tests.Documents;
     using Xunit;
 
-    public class MsSqlDocumentSessionTests
+    public partial class MsSqlDocumentSessionTests
     {
         private MsSqlDocumentStoreFixture GetFixture()
         {

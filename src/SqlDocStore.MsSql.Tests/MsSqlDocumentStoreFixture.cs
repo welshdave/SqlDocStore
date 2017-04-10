@@ -56,11 +56,12 @@
             }
         }
 
-        public async Task<MsSqlDocumentStore> GetDocumentStore()
+        public async Task<MsSqlDocumentStore> GetDocumentStore(ConcurrencyModel concurrencyModel = ConcurrencyModel.Optimistic)
         {
             await CreateDatabase();
             var settings = new DocumentStoreSettings(ConnectionString)
             {
+                ConcurrencyModel = concurrencyModel,
                 SchemaCreation = SchemaCreation.Create
             };
             var store = new MsSqlDocumentStore(settings);

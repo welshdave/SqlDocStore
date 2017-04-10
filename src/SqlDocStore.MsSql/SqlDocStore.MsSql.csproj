@@ -54,6 +54,7 @@
     <Compile Include="MsSqlDocumentStore.cs" />
     <Compile Include="Linq\MsSqlQueryParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Sql\PessimisticDeleteDocument.sql" />
     <Compile Include="Sql\Scripts.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -79,6 +80,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Sql\GetDocumentById.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Sql\InsertDocument.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Sql\UpdateDocument.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
