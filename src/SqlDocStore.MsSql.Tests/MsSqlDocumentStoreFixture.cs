@@ -8,24 +8,13 @@
 
     public class MsSqlDocumentStoreFixture : DisposableBase
     {
-        private const int Sql2016 = 13;
-
-        private static readonly string LocalDbVersion = new SqlLocalDbProvider()
-            .GetVersions()
-            .Where(provider => provider.Exists && provider.Version.Major >= Sql2016)
-            .Max(provider => provider.Version)
-            .ToString(2);
-
         private readonly string _databaseName;
         private readonly ISqlLocalDbInstance _localDbInstance;
         public readonly string ConnectionString;
 
         public MsSqlDocumentStoreFixture()
         {
-            var localDbProvider = new SqlLocalDbProvider
-            {
-                Version = LocalDbVersion
-            };
+            var localDbProvider = new SqlLocalDbProvider();
             _localDbInstance = localDbProvider.GetOrCreateInstance("DocStoreTests");
             _localDbInstance.Start();
 
