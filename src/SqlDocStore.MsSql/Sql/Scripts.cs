@@ -2,6 +2,7 @@
 {
     using System.Collections.Concurrent;
     using System.IO;
+    using System.Reflection;
 
     internal class Scripts
     {
@@ -31,7 +32,7 @@
             return _scripts.GetOrAdd(name,
                 key =>
                 {
-                    using (var stream = typeof(Scripts)
+                    using (var stream = typeof(Scripts).GetTypeInfo()
                         .Assembly
                         .GetManifestResourceStream("SqlDocStore.MsSql.Sql." + key + ".sql"))
                     {

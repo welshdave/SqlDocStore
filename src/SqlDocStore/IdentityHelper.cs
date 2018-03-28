@@ -83,7 +83,7 @@
 
             if (!DefaultValues.TryGetValue(propertyType, out object defaultValue))
             {
-                defaultValue = propertyType.IsValueType ? Activator.CreateInstance(propertyType) : null;
+                defaultValue = propertyType.GetTypeInfo().IsValueType ? Activator.CreateInstance(propertyType) : null;
                 DefaultValues.GetOrAdd(propertyType, defaultValue);
             }
             if (defaultValue != null && defaultValue.Equals(info.GetValue(document)))
@@ -111,7 +111,7 @@
             {
                 if (!PropertyCache.TryGetValue(type, out info))
                 {
-                    info = type.GetProperties().Single(p => p.Name == Identity);
+                    info = type.GetTypeInfo().DeclaredProperties.Single(p => p.Name == Identity);
                     PropertyCache.GetOrAdd(type, info);
                 }
             }

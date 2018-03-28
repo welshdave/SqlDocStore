@@ -1,6 +1,6 @@
 ﻿namespace SqlDocStore
 {
-    using EnsureThat;
+    using Vendor.EnsureThat;
 
     public class DocumentStoreSettings
     {

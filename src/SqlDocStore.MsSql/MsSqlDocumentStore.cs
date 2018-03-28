@@ -4,7 +4,7 @@
     using System.Data.SqlClient;
     using System.Threading;
     using System.Threading.Tasks;
-    using EnsureThat;
+    using Vendor.EnsureThat;
     using Sql;
 
     public class MsSqlDocumentStore : DocumentStoreBase

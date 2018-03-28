@@ -3,11 +3,11 @@
     using System;
     using System.Linq;
     using Documents;
-    using Ploeh.AutoFixture;
+    using AutoFixture;
     using Shouldly;
     using Xunit;
 
-    partial class ChangeTrackerTests
+    public partial class ChangeTrackerTests
     {
         private ChangeTracker GetChangeTracker(ConcurrencyModel concurrencyModel)
         {
