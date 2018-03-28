@@ -22,7 +22,7 @@
             get => _schema;
             set
             {
-                Ensure.That(value, nameof(Schema)).IsNotNullOrWhiteSpace();
+                EnsureArg.IsNotNullOrWhiteSpace(value, nameof(Schema));
                 _schema = value;
             }
         }
@@ -32,7 +32,7 @@
             get => _table;
             set
             {
-                Ensure.That(value, nameof(Table)).IsNotNullOrWhiteSpace();
+                EnsureArg.IsNotNullOrWhiteSpace(value, nameof(Table));
                 _table = value;
             }
         }
