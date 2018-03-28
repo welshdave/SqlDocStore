@@ -2,21 +2,18 @@
 {
     using System;
     using System.Data.SqlClient;
-    using System.Data.SqlLocalDb;
     using System.Linq;
     using System.Threading.Tasks;
 
     public class MsSqlDocumentStoreFixture : DisposableBase
     {
         private readonly string _databaseName;
-        private readonly ISqlLocalDbInstance _localDbInstance;
+        private readonly ILocalDbInstance _localDbInstance;
         public readonly string ConnectionString;
 
         public MsSqlDocumentStoreFixture()
         {
-            var localDbProvider = new SqlLocalDbProvider();
-            _localDbInstance = localDbProvider.GetOrCreateInstance("DocStoreTests");
-            _localDbInstance.Start();
+            _localDbInstance = new LocalDbInstance();
 
             _databaseName = $"DocStoreTests-{Guid.NewGuid()}";
 

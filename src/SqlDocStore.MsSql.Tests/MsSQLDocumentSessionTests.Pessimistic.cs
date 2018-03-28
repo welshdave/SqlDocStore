@@ -6,7 +6,7 @@
     using System.Dynamic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Ploeh.AutoFixture;
+    using AutoFixture;
     using Shouldly;
     using SqlDocStore.Tests.Documents;
     using Xunit;

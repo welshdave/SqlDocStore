@@ -6,7 +6,7 @@
     using System.Dynamic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Ploeh.AutoFixture;
+    using AutoFixture;
     using Shouldly;
     using SqlDocStore.Tests.Documents;
     using Xunit;
@@ -210,7 +210,7 @@
             }
         }
 
-        private static IEnumerable<object[]> GetDocuments()
+        public static IEnumerable<object[]> GetDocuments()
         {
             var fixture = new Fixture();
             yield return new object[] { fixture.Create<SimpleDoc>() };
