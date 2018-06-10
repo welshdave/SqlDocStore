@@ -39,6 +39,8 @@
                     asc);
             }
 
+            sql.Append(";");
+
             return sql.ToString();
         }
     }

@@ -20,7 +20,7 @@
             typeof(Guid)
         };
 
-        private IQueryParser _parser;
+        private readonly IQueryParser _parser;
 
         protected DocumentSessionBase()
         {
@@ -29,7 +29,7 @@
 
         protected ChangeTracker ChangeTracker;
 
-        protected abstract IQueryExecutor _executor { get; set; }
+        protected abstract IQueryExecutor Executor { get; set; }
 
         public IDocumentStore DocumentStore { get; protected set; }
 
@@ -38,7 +38,7 @@
         public void Delete<T>(T document)
         {
             CheckNotDisposed();
-            if (IdentityTypes.Contains(document.GetType())) //using object, got here when we didn't mean to.
+            if (IdentityTypes.Contains(document.GetType()))
             {
                 DeleteByIdInternal(document);
                 return;
@@ -87,7 +87,7 @@
         public ISqlDocStoreQueryable<T> Query<T>()
         {
             CheckNotDisposed();
-            return new SqlDocStoreQueryable<T>(_parser,_executor);
+            return new SqlDocStoreQueryable<T>(_parser,Executor);
         }
 
         public Task<T> Load<T>(int id, CancellationToken token = new CancellationToken())

@@ -11,6 +11,7 @@
         private readonly Type _queryableType;
         public SqlDocStoreQueryProvider(Type queryableType, IQueryParser queryParser, IQueryExecutor executor) : base(queryParser, executor)
         {
+            _queryableType = queryableType;
         }
 
         public override IQueryable<T> CreateQuery<T>(Expression expression)

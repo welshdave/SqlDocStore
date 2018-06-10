@@ -25,10 +25,10 @@
             _scripts = new Scripts(DocumentStore.Settings.Schema, DocumentStore.Settings.Table);
             _concurrencyModel = DocumentStore.Settings.ConcurrencyModel;
             ChangeTracker = new ChangeTracker(_concurrencyModel);
-            _executor = new MsSqlQueryExecutor(store, new MsSqlQueryCompiler(DocumentStore));
+            Executor = new MsSqlQueryExecutor(store, new MsSqlQueryCompiler(DocumentStore));
         }
 
-        protected sealed override IQueryExecutor _executor { get; set; }
+        protected sealed override IQueryExecutor Executor { get; set; }
 
         protected override void DeleteInternal<T>(T document)
         {

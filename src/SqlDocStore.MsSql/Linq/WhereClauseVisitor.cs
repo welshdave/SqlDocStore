@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Data.SqlClient;
     using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq.Parsing;
@@ -11,11 +10,9 @@
     internal class WhereClauseVisitor : ThrowingExpressionVisitor
     {
         private readonly StringBuilder _whereClause = new StringBuilder();
-        private readonly Dictionary<string,object> _parameters = new Dictionary<string, object>();
-        private readonly List<string> _fields = new List<string>();
         private readonly Type _docType;
 
-        private static readonly Dictionary<ExpressionType, string> _operators = new Dictionary<ExpressionType, string>
+        private static readonly Dictionary<ExpressionType, string> Operators = new Dictionary<ExpressionType, string>
         {
             { ExpressionType.Equal, " = " },
             { ExpressionType.NotEqual, " <> " },
@@ -41,7 +38,7 @@
 
         public string WhereClause => _whereClause.ToString();
 
-        public Dictionary<string,object> Parameters => _parameters;
+        public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
 
         protected override Expression VisitBinary(BinaryExpression expression)
         {
@@ -63,9 +60,9 @@
             {
                 _whereClause.Append(" IS NOT NULL ");
             }
-            else if (_operators.ContainsKey(expression.NodeType))
+            else if (Operators.ContainsKey(expression.NodeType))
             {
-                _whereClause.Append(_operators[expression.NodeType]);
+                _whereClause.Append(Operators[expression.NodeType]);
             }
             else
             {
@@ -87,8 +84,8 @@
         protected override Expression VisitConstant(ConstantExpression expression)
         {
 
-            var name = $"@{_parameters.Count.ToString()}";
-            _parameters.Add(name,expression.Value);
+            var name = $"@{Parameters.Count.ToString()}";
+            Parameters.Add(name,expression.Value);
             _whereClause.Append(name);
             return expression;
         }
@@ -100,7 +97,7 @@
             throw new NotImplementedException($"{visitMethod} method is not implemented");
         }
 
-        private BinaryExpression ConvertVbStringCompare(BinaryExpression exp)
+        private static BinaryExpression ConvertVbStringCompare(BinaryExpression exp)
         {
             if (exp.Left.NodeType == ExpressionType.Call)
             {

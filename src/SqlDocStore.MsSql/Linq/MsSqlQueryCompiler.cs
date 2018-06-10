@@ -1,33 +1,28 @@
 ﻿namespace SqlDocStore.MsSql
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Data.SqlClient;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Net.Http.Headers;
-    using System.Text;
     using Linq;
     using SqlDocStore.Linq;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
-    using Remotion.Linq.Parsing;
 
     public class MsSqlQueryCompiler : QueryModelVisitorBase, IQueryCompiler
     {
+        private readonly IDocumentStore _store;
+
+        private readonly MsSqlQueryParts _query;
+
+        private Dictionary<string, object> _parameters = new Dictionary<string, object>();
+
         public MsSqlQueryCompiler(IDocumentStore store)
         {
             _store = store;
             _query = new MsSqlQueryParts();
             
         }
-
-        private IDocumentStore _store;
-        
-        private MsSqlQueryParts _query;
-
-        private Dictionary<string,object> _parameters = new Dictionary<string, object>();
 
         public SqlQuery Compile(QueryModel queryModel)
         {

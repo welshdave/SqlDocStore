@@ -23,10 +23,6 @@
         {
         }
 
-        //public IDocumentStore Store => Executor.Store;
-
-        //public SqlDocStoreQueryExecutor Executor => (SqlDocStoreQueryExecutor)((SqlDocStoreQueryProvider) Provider).Executor;
-
         public Task<bool> AnyAsync(CancellationToken token = default)
         {
             throw new NotImplementedException();

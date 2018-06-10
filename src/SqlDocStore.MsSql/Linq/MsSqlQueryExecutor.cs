@@ -8,16 +8,16 @@
 
     public class MsSqlQueryExecutor : IQueryExecutor
     {
+        private readonly IDocumentStore _store;
+        private readonly IQueryCompiler _compiler;
+        private readonly Func<SqlConnection> _createConnection;
+
         public MsSqlQueryExecutor(IDocumentStore store, IQueryCompiler compiler)
         {
             _compiler = compiler;
             _store = store;
             _createConnection = () => new SqlConnection(_store.Settings.ConnectionString);
         }
-
-        private readonly IDocumentStore _store;
-        private readonly IQueryCompiler _compiler;
-        private readonly Func<SqlConnection> _createConnection;
 
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
