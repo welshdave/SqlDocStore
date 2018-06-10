@@ -24,9 +24,11 @@
         internal string UpdateDocument => GetScript(nameof(UpdateDocument));
         internal string UpsertDocument => GetScript(nameof(UpsertDocument));
         internal string DeleteDocument => GetScript(nameof(DeleteDocument));
+        internal string GetAllDocuments => GetScript(nameof(GetAllDocuments));
         internal string GetDocumentById => GetScript(nameof(GetDocumentById));
         internal string PessimisticDeleteDocument => GetScript(nameof(PessimisticDeleteDocument));
-       
+
+
         private string GetScript(string name)
         {
             return _scripts.GetOrAdd(name,

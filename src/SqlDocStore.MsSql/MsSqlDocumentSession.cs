@@ -1,19 +1,18 @@
 ﻿namespace SqlDocStore.MsSql
 {
     using System;
-    using System.Collections.Generic;
     using System.Data.SqlClient;
-    using System.Dynamic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Linq;
+    using Remotion.Linq;
     using Sql;
+    using SqlDocStore.Linq;
+    using MsSqlQueryExecutor = Linq.MsSqlQueryExecutor;
 
     public class MsSqlDocumentSession : DocumentSessionBase
     {
         private readonly Func<SqlConnection> _createConnection;
-        private readonly MsSqlQueryParser _parser = new MsSqlQueryParser();
         private readonly Scripts _scripts;
         private readonly ConcurrencyModel _concurrencyModel;
         private const int ConcurrencyError = 50001;
@@ -26,7 +25,10 @@
             _scripts = new Scripts(DocumentStore.Settings.Schema, DocumentStore.Settings.Table);
             _concurrencyModel = DocumentStore.Settings.ConcurrencyModel;
             ChangeTracker = new ChangeTracker(_concurrencyModel);
+            _executor = new MsSqlQueryExecutor(store, new MsSqlQueryCompiler(DocumentStore));
         }
+
+        protected sealed override IQueryExecutor _executor { get; set; }
 
         protected override void DeleteInternal<T>(T document)
         {
@@ -44,10 +46,9 @@
             {
                 var id = IdentityHelper.GetIdFromDocument(document);
                 if (ChangeTracker.Documents.ContainsKey(id) && ChangeTracker.Documents[id].State != DocumentState.Added)
-                {
                     ChangeTracker.Update(document);
-                }
             }
+
             ChangeTracker.Insert(document);
         }
 
@@ -70,6 +71,7 @@
                             await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
                         }
                     }
+
                     foreach (var document in ChangeTracker.Deletions)
                     {
                         var id = IdentityHelper.GetIdFromDocument(document);
@@ -99,13 +101,11 @@
                         }
                         catch (SqlException ex)
                         {
-                            if (ex.Number == DocumentExists)
-                            {
-                                throw new DocumentIdExistsException(ex.Message);
-                            }
+                            if (ex.Number == DocumentExists) throw new DocumentIdExistsException(ex.Message);
                             throw new DataStoreException("Error in underlying data store", ex);
                         }
                     }
+
                     foreach (var document in ChangeTracker.Updates)
                     {
                         var json = SimpleJson.SerializeObject(document);
@@ -123,13 +123,11 @@
                         }
                         catch (SqlException ex)
                         {
-                            if (ex.Number == ConcurrencyError)
-                            {
-                                throw new ConcurrencyException(ex.Message);
-                            }
+                            if (ex.Number == ConcurrencyError) throw new ConcurrencyException(ex.Message);
                             throw new DataStoreException("Error in underlying data store", ex);
                         }
                     }
+
                     foreach (var document in ChangeTracker.Deletions)
                     {
                         var id = IdentityHelper.GetIdFromDocument(document);
@@ -145,31 +143,29 @@
                         }
                         catch (SqlException ex)
                         {
-                            if (ex.Number == ConcurrencyError)
-                            {
-                                throw new ConcurrencyException(ex.Message);
-                            }
-                            throw new DataStoreException("Error in underlying data store",ex);
+                            if (ex.Number == ConcurrencyError) throw new ConcurrencyException(ex.Message);
+                            throw new DataStoreException("Error in underlying data store", ex);
                         }
                     }
                 }
-                
+
                 tran.Commit();
                 if (_concurrencyModel == ConcurrencyModel.Pessimistic)
                 {
                     ChangeTracker.MarkChangesSaved();
                     return;
                 }
+
                 ChangeTracker.Documents.Clear();
             }
         }
 
-        protected override IQueryable<T> QueryInternal<T>()
+        protected override ISqlDocStoreQueryable<T> QueryInternal<T>()
         {
-            using (var connection = _createConnection())
-            {
-                return new List<T>().AsQueryable();
-            }
+            throw new NotImplementedException();
+            //var executor = new SqlDocStoreQueryExecutor(DocumentStore);
+            //var queryProvider = new SqlDocStoreQueryProvider(typeof(SqlDocStoreQueryable<>), _parser, executor);
+            //return new SqlDocStoreQueryable<T>(queryProvider);
         }
 
         protected override async Task<T> LoadInternal<T>(object id, CancellationToken token)
@@ -187,7 +183,7 @@
                         reader.Read();
                         var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
                         var eTag = Guid.Parse(reader["ETag"].ToString());
-                        ChangeTracker.Track(doc,eTag);
+                        ChangeTracker.Track(doc, eTag);
                         return doc;
                     }
                     catch (FormatException)

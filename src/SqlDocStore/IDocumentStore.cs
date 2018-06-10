@@ -8,8 +8,8 @@
     {
         DocumentStoreSettings Settings { get; }
 
-        Task<IDocumentSession> CreateSession(CancellationToken token = default(CancellationToken));
+        Task<IDocumentSession> CreateSession(CancellationToken token = default);
 
-        Task InitializeSchema(CancellationToken token = default(CancellationToken));
+        Task InitializeSchema(CancellationToken token = default);
     }
 }

@@ -3,8 +3,12 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Linq;
+    using Remotion.Linq;
+    using Remotion.Linq.Parsing.Structure;
 
     public abstract class DocumentSessionBase : DisposableBase, IDocumentSession
     {
@@ -16,7 +20,16 @@
             typeof(Guid)
         };
 
+        private IQueryParser _parser;
+
+        protected DocumentSessionBase()
+        {
+            _parser = QueryParserFactory.CreateQueryParser();
+        }
+
         protected ChangeTracker ChangeTracker;
+
+        protected abstract IQueryExecutor _executor { get; set; }
 
         public IDocumentStore DocumentStore { get; protected set; }
 
@@ -71,10 +84,11 @@
             return SaveChangesInternal(token);
         }
 
-        public IQueryable<T> Query<T>()
+        public ISqlDocStoreQueryable<T> Query<T>()
         {
             CheckNotDisposed();
-            return QueryInternal<T>();
+            return new SqlDocStoreQueryable<T>(_parser,_executor);
+            //return QueryInternal<T>();
         }
 
         public Task<T> Load<T>(int id, CancellationToken token = new CancellationToken())
@@ -109,7 +123,7 @@
 
         protected abstract Task SaveChangesInternal(CancellationToken token);
 
-        protected abstract IQueryable<T> QueryInternal<T>();
+        protected abstract ISqlDocStoreQueryable<T> QueryInternal<T>();
 
         protected abstract Task<T> LoadInternal<T>(object id, CancellationToken token);
     }

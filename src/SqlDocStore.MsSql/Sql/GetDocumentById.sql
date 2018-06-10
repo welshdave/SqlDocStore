@@ -1,1 +1,1 @@
-﻿SELECT Document, ETag FROM {@schema_name}.{@table_name} where vId = @id;
+﻿SELECT Document, ETag FROM {@schema_name}.{@table_name} WHERE vId = @id;

@@ -12,7 +12,7 @@
 
         public DocumentStoreSettings Settings { get; }
 
-        public async Task<IDocumentSession> CreateSession(CancellationToken token = default(CancellationToken))
+        public async Task<IDocumentSession> CreateSession(CancellationToken token = default)
         {
             CheckNotDisposed();
             return await CreateSessionInternal(token);

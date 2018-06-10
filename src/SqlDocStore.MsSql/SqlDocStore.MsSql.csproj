@@ -4,10 +4,15 @@
     <TargetFramework>netstandard1.3</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Sql\CreateNonDefaultSchema.sql" />
     <None Remove="Sql\CreateTable.sql" />
     <None Remove="Sql\DeleteDocument.sql" />
+    <None Remove="Sql\GetAllDocuments.sql" />
     <None Remove="Sql\GetDocumentById.sql" />
     <None Remove="Sql\InsertDocument.sql" />
     <None Remove="Sql\PessimisticDeleteDocument.sql" />
@@ -20,8 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Remotion.Linq" Version="2.1.2" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
+    <PackageReference Include="Remotion.Linq" Version="2.2.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.3" />
   </ItemGroup>
 
   <ItemGroup>

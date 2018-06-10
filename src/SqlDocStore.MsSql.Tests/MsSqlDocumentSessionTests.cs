@@ -11,13 +11,13 @@
     using SqlDocStore.Tests.Documents;
     using Xunit;
 
-    public partial class MsSqlDocumentSessionTests
+    public class MsSqlDocumentSessionTests
     {
         private MsSqlDocumentStoreFixture GetFixture()
         {
             return new MsSqlDocumentStoreFixture();
         }
-
+        
         [Fact]
         public async Task should_add_document_to_pending_changes()
         {
@@ -209,7 +209,32 @@
                 }
             }
         }
+        
+        [Fact]
+        public async Task should_not_delete_document_updated_in_another_session()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore(ConcurrencyModel.Pessimistic))
+                {
+                    var session = await store.CreateSession();
+                    var autofixture = new Fixture();
+                    var simple = autofixture.Create<SimpleDoc>();
+                    session.Store(simple);
+                    await session.SaveChanges();
 
+                    var session2 = await store.CreateSession();
+                    var simple2 = await session2.Load<SimpleDoc>(simple.Id);
+
+                    simple2.Description = $"Description{Guid.NewGuid()}";
+                    session2.Store(simple2);
+                    await session2.SaveChanges();
+                    session.Delete(simple);
+                    Should.Throw<ConcurrencyException>(async () => await session.SaveChanges());
+                }
+            }
+        }
+        
         public static IEnumerable<object[]> GetDocuments()
         {
             var fixture = new Fixture();

@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Linq;
 
     public interface IDocumentSession
     {
@@ -24,16 +25,16 @@
 
         void Store<T>(T document);
 
-        Task SaveChanges(CancellationToken token = default(CancellationToken));
+        Task SaveChanges(CancellationToken token = default);
 
-        IQueryable<T> Query<T>();
+        ISqlDocStoreQueryable<T> Query<T>();
 
-        Task<T> Load<T>(int id, CancellationToken token = default(CancellationToken));
+        Task<T> Load<T>(int id, CancellationToken token = default);
 
-        Task<T> Load<T>(long id, CancellationToken token = default(CancellationToken));
+        Task<T> Load<T>(long id, CancellationToken token = default);
 
-        Task<T> Load<T>(Guid id, CancellationToken token = default(CancellationToken));
+        Task<T> Load<T>(Guid id, CancellationToken token = default);
 
-        Task<T> Load<T>(string id, CancellationToken token = default(CancellationToken));
+        Task<T> Load<T>(string id, CancellationToken token = default);
     }
 }
