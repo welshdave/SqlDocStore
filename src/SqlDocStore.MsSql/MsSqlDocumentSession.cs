@@ -160,14 +160,6 @@
             }
         }
 
-        protected override ISqlDocStoreQueryable<T> QueryInternal<T>()
-        {
-            throw new NotImplementedException();
-            //var executor = new SqlDocStoreQueryExecutor(DocumentStore);
-            //var queryProvider = new SqlDocStoreQueryProvider(typeof(SqlDocStoreQueryable<>), _parser, executor);
-            //return new SqlDocStoreQueryable<T>(queryProvider);
-        }
-
         protected override async Task<T> LoadInternal<T>(object id, CancellationToken token)
         {
             using (var connection = _createConnection())

@@ -88,7 +88,6 @@
         {
             CheckNotDisposed();
             return new SqlDocStoreQueryable<T>(_parser,_executor);
-            //return QueryInternal<T>();
         }
 
         public Task<T> Load<T>(int id, CancellationToken token = new CancellationToken())
@@ -122,8 +121,6 @@
         protected abstract void StoreInternal<T>(T document);
 
         protected abstract Task SaveChangesInternal(CancellationToken token);
-
-        protected abstract ISqlDocStoreQueryable<T> QueryInternal<T>();
 
         protected abstract Task<T> LoadInternal<T>(object id, CancellationToken token);
     }
