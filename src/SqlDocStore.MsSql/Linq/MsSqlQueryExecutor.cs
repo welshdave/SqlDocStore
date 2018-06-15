@@ -5,6 +5,7 @@
     using System.Data.SqlClient;
     using System.Linq;
     using Remotion.Linq;
+    using Remotion.Linq.Clauses.ResultOperators;
     using SqlDocStore.Linq;
 
     public class MsSqlQueryExecutor : IQueryExecutor
@@ -28,33 +29,19 @@
 
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
-            var sql = _compiler.Compile(queryModel);
+            var results = ExecuteCollection<T>(queryModel);
 
-            using (var connection = _createConnection())
+            foreach (var resultOperator in queryModel.ResultOperators)
             {
-                connection.Open();
-                using (var command = new SqlCommand(sql.Sql, connection))
+                switch (resultOperator)
                 {
-                    foreach (var key in sql.Parameters.Keys)
-                    {
-                        command.Parameters.AddWithValue(key, sql.Parameters[key]);
-                    }
-                    var reader = command.ExecuteReader();
-                    if (!reader.HasRows) return default(T);
-                    try
-                    {
-                        reader.Read();
-                        var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
-                        var eTag = Guid.Parse(reader["ETag"].ToString());
-                        _session.ChangeTracker.Track(doc, eTag);
-                        return doc;
-                    }
-                    catch (FormatException)
-                    {
-                        throw new InvalidCastException($"Unable to cast document to Type {typeof(T)}");
-                    }
+                    case LastResultOperator _:
+                        return returnDefaultWhenEmpty ? results.LastOrDefault() : results.Last();
+                    case SingleResultOperator _:
+                        return results.Single();
                 }
             }
+            return returnDefaultWhenEmpty ? results.FirstOrDefault() : results.First();
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
