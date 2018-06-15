@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Data.SqlClient;
+    using System.Linq;
     using Remotion.Linq;
     using SqlDocStore.Linq;
 
@@ -54,14 +55,48 @@
                     }
                 }
             }
-
-            
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
             var sql = _compiler.Compile(queryModel);
-            throw new NotImplementedException();
+ 
+            using (var connection = _createConnection())
+            {
+                connection.Open();
+                using (var command = new SqlCommand(sql.Sql, connection))
+                {
+                    foreach (var key in sql.Parameters.Keys)
+                    {
+                        command.Parameters.AddWithValue(key, sql.Parameters[key]);
+                    }
+                    var reader = command.ExecuteReader();
+                    if (!reader.HasRows)
+                    {
+                        yield break;
+                    }
+                    var docs = new List<Tuple<T, Guid>>();
+                    try
+                    {
+                        while (reader.Read())
+                        {
+                            var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
+                            var eTag = Guid.Parse(reader["ETag"].ToString());
+                            docs.Add(new Tuple<T, Guid>(doc,eTag));
+                        }
+                    }
+                    catch (FormatException)
+                    {
+                        throw new InvalidCastException($"Unable to cast document to Type {typeof(T)}");
+                    }
+
+                    foreach (var doc in docs)
+                    {
+                        _session.ChangeTracker.Track(doc.Item1, doc.Item2);
+                        yield return doc.Item1;
+                    }
+                }
+            }
         }
     }
 }
