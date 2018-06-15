@@ -13,6 +13,8 @@
 
         IDocumentStore DocumentStore { get; }
 
+        ChangeTracker ChangeTracker { get; set; }
+
         void Delete<T>(T document);
 
         void Delete(int id);

@@ -25,7 +25,7 @@
             _parser = QueryParserFactory.CreateQueryParser();
         }
 
-        protected ChangeTracker ChangeTracker;
+        public ChangeTracker ChangeTracker { get; set; }
 
         protected abstract IQueryExecutor Executor { get; set; }
 

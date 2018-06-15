@@ -25,7 +25,7 @@
             _scripts = new Scripts(DocumentStore.Settings.Schema, DocumentStore.Settings.Table);
             _concurrencyModel = DocumentStore.Settings.ConcurrencyModel;
             ChangeTracker = new ChangeTracker(_concurrencyModel);
-            Executor = new MsSqlQueryExecutor(store, new MsSqlQueryCompiler(DocumentStore));
+            Executor = new MsSqlQueryExecutor(this, new MsSqlQueryCompiler(DocumentStore));
         }
 
         protected sealed override IQueryExecutor Executor { get; set; }

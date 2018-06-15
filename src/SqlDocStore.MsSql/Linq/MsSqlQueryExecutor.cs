@@ -8,15 +8,15 @@
 
     public class MsSqlQueryExecutor : IQueryExecutor
     {
-        private readonly IDocumentStore _store;
+        private readonly IDocumentSession _session;
         private readonly IQueryCompiler _compiler;
         private readonly Func<SqlConnection> _createConnection;
 
-        public MsSqlQueryExecutor(IDocumentStore store, IQueryCompiler compiler)
+        public MsSqlQueryExecutor(IDocumentSession session, IQueryCompiler compiler)
         {
+            _session = session;
             _compiler = compiler;
-            _store = store;
-            _createConnection = () => new SqlConnection(_store.Settings.ConnectionString);
+            _createConnection = () => new SqlConnection(session.DocumentStore.Settings.ConnectionString);
         }
 
         public T ExecuteScalar<T>(QueryModel queryModel)
@@ -44,9 +44,8 @@
                     {
                         reader.Read();
                         var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
-                        //var eTag = Guid.Parse(reader["ETag"].ToString());
-                        //TODO: include in change tracker.
-                        //ChangeTracker.Track(doc, eTag);
+                        var eTag = Guid.Parse(reader["ETag"].ToString());
+                        _session.ChangeTracker.Track(doc, eTag);
                         return doc;
                     }
                     catch (FormatException)
