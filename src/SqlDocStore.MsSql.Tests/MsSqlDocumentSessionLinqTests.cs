@@ -1,5 +1,6 @@
 ﻿namespace SqlDocStore.MsSql.Tests
 {
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
     using Shouldly;
@@ -106,6 +107,65 @@
 
                     foundDocs.Count.ShouldBe(9);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task should_orderby_ascending()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore(ConcurrencyModel.Optimistic))
+                {
+                    var session = await store.CreateSession();
+
+                    GenerateAndStoreDocs(10, session);
+
+                    await session.SaveChanges();
+
+                    var foundDocs = session.Query<SimpleDoc>().Where(doc => doc.Id != 3).OrderBy(x => x.Id).ToList();
+
+                    foundDocs.ShouldSatisfyAllConditions
+                    (
+                        "First and Last Ids should be correct",
+                        () => foundDocs.First().Id.ShouldBe(1),
+                        () => foundDocs.Last().Id.ShouldBe(10)
+                    );
+                }
+            }
+        }
+
+        [Fact]
+        public async Task should_orderby_descending()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore(ConcurrencyModel.Optimistic))
+                {
+                    var session = await store.CreateSession();
+
+                    GenerateAndStoreDocs(10, session);
+
+                    await session.SaveChanges();
+
+                    var foundDocs = session.Query<SimpleDoc>().Where(doc => doc.Id != 3).OrderByDescending(x => x.Id).ToList();
+
+                    foundDocs.ShouldSatisfyAllConditions
+                    (
+                        "First and Last Ids should be correct",
+                        () => foundDocs.First().Id.ShouldBe(10),
+                        () => foundDocs.Last().Id.ShouldBe(1)
+                    );
+                }
+            }
+        }
+
+        private void GenerateAndStoreDocs(int numDocs, IDocumentSession session)
+        {
+            for (var i = 1; i <= 10; i++)
+            {
+                var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
+                session.Store(doc);
             }
         }
     }
