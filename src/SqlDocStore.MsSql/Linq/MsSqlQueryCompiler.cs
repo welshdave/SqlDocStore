@@ -28,8 +28,7 @@
         {
             base.VisitQueryModel(queryModel);
 
-            var sqlQuery = new SqlQuery();
-            sqlQuery.Sql = _query;
+            var sqlQuery = new SqlQuery {Sql = _query};
             foreach (var parameter in _parameters)
             {
                 sqlQuery.Parameters.Add(parameter.Key,parameter.Value);
@@ -57,19 +56,22 @@
             var wheres = bodyClauses.OfType<WhereClause>().ToList();
             foreach (var where in wheres)
             {
-                VisitWhereClause(where, queryModel, wheres.IndexOf(where)); //Why do I need to do this? Shouldn't VisitWhereClause get called anyway?
+                var whereVisitor = new WhereClauseVisitor(queryModel.MainFromClause.ItemType);
+                whereVisitor.Visit(where.Predicate);
+                _query.Where = whereVisitor.WhereClause;
+                _parameters = whereVisitor.Parameters;
             }
 
+            var orderBy = bodyClauses.OfType<OrderByClause>().FirstOrDefault();
+            if(orderBy != null)
+                foreach (var ordering in orderBy.Orderings)
+                {
+                    var expression = ordering.Expression;
+                    if (expression is MemberExpression exp)
+                    {
+                        _query.OrderBy.Add(new MsSqlOrderBy { Name = exp.Member.Name, Type = exp.Type, Direction = ordering.OrderingDirection});
+                    }
+                }
         }
-
-        public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
-        {
-            var where = new WhereClauseVisitor(queryModel.MainFromClause.ItemType);
-            where.Visit(whereClause.Predicate);
-            _query.Where = where.WhereClause;
-            _parameters = where.Parameters;
-            base.VisitWhereClause(whereClause, queryModel, index);
-        }
-
     }
 }

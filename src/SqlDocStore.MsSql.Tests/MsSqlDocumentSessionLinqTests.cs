@@ -162,7 +162,7 @@
 
         private void GenerateAndStoreDocs(int numDocs, IDocumentSession session)
         {
-            for (var i = 1; i <= 10; i++)
+            for (var i = 1; i <= numDocs; i++)
             {
                 var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
                 session.Store(doc);
