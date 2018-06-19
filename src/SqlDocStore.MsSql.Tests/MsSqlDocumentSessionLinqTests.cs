@@ -23,11 +23,7 @@
                 {
                     var session = await store.CreateSession();
 
-                    for (var i = 1; i <= 10; i++)
-                    {
-                        var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
-                        session.Store(doc);
-                    }
+                    GenerateAndStoreDocs(10, session);
 
                     await session.SaveChanges();
 
@@ -47,11 +43,7 @@
                 {
                     var session = await store.CreateSession();
 
-                    for (var i = 1; i <= 10; i++)
-                    {
-                        var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
-                        session.Store(doc);
-                    }
+                    GenerateAndStoreDocs(10, session);
 
                     await session.SaveChanges();
 
@@ -71,11 +63,7 @@
                 {
                     var session = await store.CreateSession();
 
-                    for (var i = 1; i <= 10; i++)
-                    {
-                        var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
-                        session.Store(doc);
-                    }
+                    GenerateAndStoreDocs(10, session);
 
                     await session.SaveChanges();
 
@@ -95,11 +83,7 @@
                 {
                     var session = await store.CreateSession();
 
-                    for (var i = 1; i <= 10; i++)
-                    {
-                        var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
-                        session.Store(doc);
-                    }
+                    GenerateAndStoreDocs(10, session);
 
                     await session.SaveChanges();
 
