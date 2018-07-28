@@ -13,6 +13,7 @@
         private readonly IDocumentSession _session;
         private readonly IQueryCompiler _compiler;
         private readonly Func<SqlConnection> _createConnection;
+        private ISerializer _serializer = new SimpleJsonSerializer();
 
         public MsSqlQueryExecutor(IDocumentSession session, IQueryCompiler compiler)
         {
@@ -67,7 +68,7 @@
                     {
                         while (reader.Read())
                         {
-                            var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
+                            var doc = _serializer.Deserialize<T>(reader["Document"].ToString());
                             var eTag = Guid.Parse(reader["ETag"].ToString());
                             docs.Add(new Tuple<T, Guid>(doc,eTag));
                         }

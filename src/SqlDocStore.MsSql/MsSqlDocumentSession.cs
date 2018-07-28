@@ -17,6 +17,7 @@
         private readonly ConcurrencyModel _concurrencyModel;
         private const int ConcurrencyError = 50001;
         private const int DocumentExists = 50002;
+        private ISerializer _serializer = new SimpleJsonSerializer();
 
         public MsSqlDocumentSession(Func<SqlConnection> createConnection, IDocumentStore store)
         {
@@ -63,7 +64,7 @@
                 {
                     foreach (var document in ChangeTracker.Inserts.Union(ChangeTracker.Updates))
                     {
-                        var json = SimpleJson.SerializeObject(document);
+                        var json = _serializer.Serialize(document);
                         using (var command = new SqlCommand(_scripts.UpsertDocument, connection))
                         {
                             command.Transaction = tran;
@@ -87,7 +88,7 @@
                 {
                     foreach (var document in ChangeTracker.Inserts)
                     {
-                        var json = SimpleJson.SerializeObject(document);
+                        var json = _serializer.Serialize(document);
                         var id = IdentityHelper.GetIdFromDocument(document);
                         try
                         {
@@ -108,7 +109,7 @@
 
                     foreach (var document in ChangeTracker.Updates)
                     {
-                        var json = SimpleJson.SerializeObject(document);
+                        var json = _serializer.Serialize(document);
                         var id = IdentityHelper.GetIdFromDocument(document);
                         try
                         {
@@ -173,7 +174,7 @@
                     try
                     {
                         reader.Read();
-                        var doc = SimpleJson.DeserializeObject<T>(reader["Document"].ToString());
+                        var doc = _serializer.Deserialize<T>(reader["Document"].ToString());
                         var eTag = Guid.Parse(reader["ETag"].ToString());
                         ChangeTracker.Track(doc, eTag);
                         return doc;
