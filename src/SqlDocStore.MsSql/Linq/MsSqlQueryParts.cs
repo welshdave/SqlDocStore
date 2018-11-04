@@ -9,10 +9,11 @@
         public MsSqlQueryParts()
         {
             OrderBy = new List<MsSqlOrderBy>();
-            Fields = new List<string> {"Document", "Etag"};
+            Fields = new List<string> {"doc.Document", "doc.Etag"};
         }
 
         public string From { get; set; }
+        public string SubQuery { get; set; }
         public string Where { get; set; }
         public List<MsSqlOrderBy> OrderBy { get; set; }
         public List<string> Fields { get; set; }
@@ -55,9 +56,10 @@
         public override string ToString()
         {
             var sql = new StringBuilder();
-            sql.AppendFormat("SELECT {0} FROM {1}",
+            sql.AppendFormat("SELECT {0} FROM {1} {2}",
                 string.Join(", ", Fields),
-                From);
+                From,
+                SubQuery);
             if (!string.IsNullOrEmpty(Where))
                 sql.AppendFormat(" WHERE {0}", Where);
             if (OrderBy.Count > 0)
@@ -66,7 +68,7 @@
 
                 foreach (var orderBy in OrderBy)
                     jsonOrderBy.Add(
-                        $"CAST(JSON_VALUE(Document, '$.{orderBy.Name}') AS {Types[orderBy.Type]}) {orderBy.Direction.ToString().ToUpper()}");
+                        $"CAST(JSON_VALUE(doc.Document, '$.{orderBy.Name}') AS {Types[orderBy.Type]}) {orderBy.Direction.ToString().ToUpper()}");
 
                 sql.AppendFormat(" ORDER BY {0}",
                     string.Join(", ", jsonOrderBy));

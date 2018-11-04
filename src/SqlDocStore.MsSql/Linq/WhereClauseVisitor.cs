@@ -2,129 +2,89 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
+    using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
     using SqlDocStore.Linq;
+    using SubQueries;
 
-    internal class WhereClauseVisitor : ThrowingExpressionVisitor
+    internal class WhereClauseVisitor : RelinqExpressionVisitor
     {
         private readonly StringBuilder _whereClause = new StringBuilder();
         private readonly Type _docType;
 
-        private static readonly Dictionary<ExpressionType, string> Operators = new Dictionary<ExpressionType, string>
-        {
-            { ExpressionType.Equal, " = " },
-            { ExpressionType.NotEqual, " <> " },
-            { ExpressionType.GreaterThan, " > " },
-            { ExpressionType.GreaterThanOrEqual, " >= " },
-            { ExpressionType.LessThan, " < " },
-            { ExpressionType.LessThanOrEqual, " <= " },
-            { ExpressionType.AndAlso, " AND " },
-            { ExpressionType.OrElse, " OR " },
-            { ExpressionType.Add, " + " },
-            { ExpressionType.Subtract, " - " },
-            { ExpressionType.Multiply, " * " },
-            { ExpressionType.Divide, " / " },
-            { ExpressionType.Modulo, " % " },
-            { ExpressionType.And, " & " },
-            { ExpressionType.Or, " | " }
-        };
-
+        
         public WhereClauseVisitor(Type docType)
         {
             _docType = docType;
         }
 
         public string WhereClause => _whereClause.ToString();
+        public string SubQuery { get; private set; }
 
         public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
 
-        protected override Expression VisitBinary(BinaryExpression expression)
+        protected override Expression VisitBinary(BinaryExpression node)
         {
             _whereClause.Append("(");
 
             //https://www.re-motion.org/blogs/mix/2009/10/16/vb-net-specific-text-comparison-in-linq-queries/
-            expression = ConvertVbStringCompare(expression);
+            node = ExpressionHelper.ConvertVbStringCompare(node);
 
-            var left = expression.Left;
-            var right = expression.Right;
+            var left = node.Left;
+            var right = node.Right;
             if ((right.NodeType == ExpressionType.MemberAccess) && (((MemberExpression)right).Member.DeclaringType == _docType))
             {
-                left = expression.Right;
-                right = expression.Left;
+                left = node.Right;
+                right = node.Left;
             }
 
             Visit(left);
-            if (expression.NodeType == ExpressionType.NotEqual && right.IsNull())
+            if (node.NodeType == ExpressionType.NotEqual && right.IsNull())
             {
                 _whereClause.Append(" IS NOT NULL ");
             }
-            else if (Operators.ContainsKey(expression.NodeType))
+            else if (ExpressionHelper.Operators.ContainsKey(node.NodeType))
             {
-                _whereClause.Append(Operators[expression.NodeType]);
+                _whereClause.Append(ExpressionHelper.Operators[node.NodeType]);
             }
             else
             {
-                throw new NotSupportedException($"{expression.NodeType.ToString()} statement is not supported");
+                throw new NotSupportedException($"{node.NodeType.ToString()} statement is not supported");
             }
 
             if (!right.IsNull())
                 Visit(right);
             _whereClause.Append(")");
-            return expression;
+            return node;
         }
 
-        protected override Expression VisitMember(MemberExpression expression)
+        protected override Expression VisitMember(MemberExpression node)
         {
-            _whereClause.AppendFormat("JSON_VALUE(Document, '$.{0}')",  expression.Member.Name);
-            return expression;
+            _whereClause.AppendFormat("JSON_VALUE(doc.Document, '$.{0}')",  node.Member.Name);
+            return node;
         }
 
-        protected override Expression VisitConstant(ConstantExpression expression)
+        protected override Expression VisitConstant(ConstantExpression node)
         {
 
             var name = $"@{Parameters.Count.ToString()}";
-            Parameters.Add(name,expression.Value);
+            Parameters.Add(name,node.Value);
             _whereClause.Append(name);
-            return expression;
+            return node;
         }
 
-        
-
-        protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
+        protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
-            throw new NotImplementedException($"{visitMethod} method is not implemented");
-        }
+            var visitor = new SubQueryVisitor(expression.QueryModel.MainFromClause.ItemType);
+            visitor.Visit(expression);
 
-        private static BinaryExpression ConvertVbStringCompare(BinaryExpression exp)
-        {
-            if (exp.Left.NodeType == ExpressionType.Call)
-            {
-                var compareStringCall = (MethodCallExpression)exp.Left;
-                if (compareStringCall.Method.DeclaringType.FullName == "Microsoft.VisualBasic.CompilerServices.Operators" && compareStringCall.Method.Name == "CompareString")
-                {
-                    var arg1 = compareStringCall.Arguments[0];
-                    var arg2 = compareStringCall.Arguments[1];
+            SubQuery = visitor.SubQuery;
+            visitor.Parameters.ToList().ForEach(x => Parameters.Add(x.Key, x.Value));
 
-                    switch (exp.NodeType)
-                    {
-                        case ExpressionType.LessThan:
-                            return Expression.LessThan(arg1, arg2);
-                        case ExpressionType.LessThanOrEqual:
-                            return Expression.LessThanOrEqual(arg1, arg2);
-                        case ExpressionType.GreaterThan:
-                            return Expression.GreaterThan(arg1, arg2);
-                        case ExpressionType.GreaterThanOrEqual:
-                            return Expression.GreaterThanOrEqual(arg1, arg2);
-                        case ExpressionType.NotEqual:
-                            return Expression.NotEqual(arg1, arg2);
-                        default:
-                            return Expression.Equal(arg1, arg2);
-                    }
-                }
-            }
-            return exp;
+            return base.VisitSubQuery(expression);
         }
     }
 }
