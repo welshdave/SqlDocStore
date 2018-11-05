@@ -17,7 +17,7 @@
         private readonly ConcurrencyModel _concurrencyModel;
         private const int ConcurrencyError = 50001;
         private const int DocumentExists = 50002;
-        private ISerializer _serializer = new SimpleJsonSerializer();
+        private readonly ISerializer _serializer = new SimpleJsonSerializer();
 
         public MsSqlDocumentSession(Func<SqlConnection> createConnection, IDocumentStore store)
         {

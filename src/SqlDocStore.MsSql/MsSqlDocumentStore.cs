@@ -14,7 +14,6 @@
 
         private readonly Func<SqlConnection> _createConnection;
         private readonly Scripts _scripts;
-        private readonly DocumentStoreSettings _settings;
 
         public MsSqlDocumentStore(DocumentStoreSettings settings) : base(settings)
         {
@@ -23,7 +22,6 @@
                 settings.Schema = DefaultSchema;
 
             _createConnection = () => new SqlConnection(settings.ConnectionString);
-            _settings = settings;
             _scripts = new Scripts(settings.Schema, settings.Table);
         }
 

@@ -13,7 +13,7 @@
         private readonly IDocumentSession _session;
         private readonly IQueryCompiler _compiler;
         private readonly Func<SqlConnection> _createConnection;
-        private ISerializer _serializer = new SimpleJsonSerializer();
+        private readonly ISerializer _serializer = new SimpleJsonSerializer();
 
         public MsSqlQueryExecutor(IDocumentSession session, IQueryCompiler compiler)
         {
