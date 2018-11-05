@@ -1,13 +1,17 @@
 ﻿namespace SqlDocStore.MsSql.Linq
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
-    using System.Text;
+    using Remotion.Linq.Parsing;
     using SqlDocStore.Linq;
 
-    internal static class ExpressionHelper
+    internal abstract class WhereClauseVisitorBase : RelinqExpressionVisitor
     {
-        internal static readonly Dictionary<ExpressionType, string> Operators = new Dictionary<ExpressionType, string>
+        protected readonly Type DocType;
+        protected readonly MsSqlQueryParts Query;
+
+        private static readonly Dictionary<ExpressionType, string> Operators = new Dictionary<ExpressionType, string>
         {
             { ExpressionType.Equal, " = " },
             { ExpressionType.NotEqual, " <> " },
@@ -26,7 +30,48 @@
             { ExpressionType.Or, " | " }
         };
 
-        internal static BinaryExpression ConvertVbStringCompare(BinaryExpression exp)
+        protected WhereClauseVisitorBase(Type docType, MsSqlQueryParts query)
+        {
+            DocType = docType;
+            Query = query;
+        }
+
+        protected override Expression VisitBinary(BinaryExpression node)
+        {
+            Query.WhereBuilder.Append("(");
+
+            //https://www.re-motion.org/blogs/mix/2009/10/16/vb-net-specific-text-comparison-in-linq-queries/
+            node = ConvertVbStringCompare(node);
+
+            var left = node.Left;
+            var right = node.Right;
+            if ((right.NodeType == ExpressionType.MemberAccess) && (((MemberExpression)right).Member.DeclaringType == DocType))
+            {
+                left = node.Right;
+                right = node.Left;
+            }
+
+            Visit(left);
+            if (node.NodeType == ExpressionType.NotEqual && right.IsNull())
+            {
+                Query.WhereBuilder.Append(" IS NOT NULL ");
+            }
+            else if (Operators.ContainsKey(node.NodeType))
+            {
+                Query.WhereBuilder.Append(Operators[node.NodeType]);
+            }
+            else
+            {
+                throw new NotSupportedException($"{node.NodeType.ToString()} statement is not supported");
+            }
+
+            if (!right.IsNull())
+                Visit(right);
+            Query.WhereBuilder.Append(")");
+            return node;
+        }
+
+        private static BinaryExpression ConvertVbStringCompare(BinaryExpression exp)
         {
             if (exp.Left.NodeType == ExpressionType.Call)
             {
