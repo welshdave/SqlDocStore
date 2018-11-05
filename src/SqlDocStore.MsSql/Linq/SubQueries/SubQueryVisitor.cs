@@ -3,8 +3,10 @@
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
+    using System.Linq;
 
     internal class SubQueryVisitor : WhereClauseVisitorBase
     {
@@ -20,7 +22,7 @@
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
             var query = expression.QueryModel;
-            
+
             var fromExpression = query.MainFromClause.FromExpression as MemberExpression;
 
 
@@ -28,11 +30,19 @@
                 " CROSS APPLY OPENJSON(JSON_QUERY(Document, '$.{0}')) as subDocs_{1} ", fromExpression.Member.Name, _suffix);
             Query.FromBuilder.AppendFormat("CROSS APPLY OPENJSON(subDocs_{0}.[value], '$') as SubDoc_{0} ", _suffix);
 
-            foreach(var op in query.ResultOperators)
+            foreach (var op in query.ResultOperators)
             {
-                if (op is AllResultOperator allOp)
+                if (op is AnyResultOperator)
                 {
-                    VisitBinary(allOp.Predicate as BinaryExpression);
+                    foreach (var clause in query.BodyClauses.OfType<WhereClause>())
+                    {
+                        VisitBinary(clause.Predicate as BinaryExpression);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException(
+                        $"SqlDocStore currently only supports 'Any' in nested queries");
                 }
             }
 
