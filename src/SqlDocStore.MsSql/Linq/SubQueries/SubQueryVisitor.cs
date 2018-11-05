@@ -45,54 +45,54 @@
             return base.VisitSubQuery(expression);
         }
 
-        protected override Expression VisitBinary(BinaryExpression expression)
+        protected override Expression VisitBinary(BinaryExpression node)
         {
             _query.WhereBuilder.Append("(");
 
             //https://www.re-motion.org/blogs/mix/2009/10/16/vb-net-specific-text-comparison-in-linq-queries/
-            expression = ExpressionHelper.ConvertVbStringCompare(expression);
+            node = ExpressionHelper.ConvertVbStringCompare(node);
 
-            var left = expression.Left;
-            var right = expression.Right;
+            var left = node.Left;
+            var right = node.Right;
             if ((right.NodeType == ExpressionType.MemberAccess) && (((MemberExpression)right).Member.DeclaringType == _docType))
             {
-                left = expression.Right;
-                right = expression.Left;
+                left = node.Right;
+                right = node.Left;
             }
 
             Visit(left);
-            if (expression.NodeType == ExpressionType.NotEqual && right.IsNull())
+            if (node.NodeType == ExpressionType.NotEqual && right.IsNull())
             {
                 _query.WhereBuilder.Append(" IS NOT NULL ");
             }
-            else if (ExpressionHelper.Operators.ContainsKey(expression.NodeType))
+            else if (ExpressionHelper.Operators.ContainsKey(node.NodeType))
             {
-                _query.WhereBuilder.Append(ExpressionHelper.Operators[expression.NodeType]);
+                _query.WhereBuilder.Append(ExpressionHelper.Operators[node.NodeType]);
             }
             else
             {
-                throw new NotSupportedException($"{expression.NodeType.ToString()} statement is not supported");
+                throw new NotSupportedException($"{node.NodeType.ToString()} statement is not supported");
             }
 
             if (!right.IsNull())
                 Visit(right);
             _query.WhereBuilder.Append(")");
-            return expression;
+            return node;
         }
 
-        protected override Expression VisitMember(MemberExpression expression)
+        protected override Expression VisitMember(MemberExpression node)
         {
-            _query.WhereBuilder.AppendFormat("subDoc_{0}.[key] = '{1}' AND subDoc_{0}.[value]", _suffix, expression.Member.Name);
-            return expression;
+            _query.WhereBuilder.AppendFormat("subDoc_{0}.[key] = '{1}' AND subDoc_{0}.[value]", _suffix, node.Member.Name);
+            return node;
         }
 
-        protected override Expression VisitConstant(ConstantExpression expression)
+        protected override Expression VisitConstant(ConstantExpression node)
         {
 
             var name = $"@{Parameters.Count.ToString()}_{_suffix}";
-            Parameters.Add(name, expression.Value);
+            Parameters.Add(name, node.Value);
             _query.WhereBuilder.Append(name);
-            return expression;
+            return node;
         }
 
     }
