@@ -10,11 +10,12 @@
         {
             OrderBy = new List<MsSqlOrderBy>();
             Fields = new List<string> {"doc.Document", "doc.Etag"};
+            FromBuilder = new StringBuilder();
+            WhereBuilder = new StringBuilder();
         }
 
-        public string From { get; set; }
-        public string SubQuery { get; set; }
-        public string Where { get; set; }
+        public StringBuilder FromBuilder { get; set; }
+        public StringBuilder WhereBuilder { get; set; }
         public List<MsSqlOrderBy> OrderBy { get; set; }
         public List<string> Fields { get; set; }
 
@@ -56,12 +57,11 @@
         public override string ToString()
         {
             var sql = new StringBuilder();
-            sql.AppendFormat("SELECT {0} FROM {1} {2}",
+            sql.AppendFormat("SELECT {0} FROM {1} ",
                 string.Join(", ", Fields),
-                From,
-                SubQuery);
-            if (!string.IsNullOrEmpty(Where))
-                sql.AppendFormat(" WHERE {0}", Where);
+                FromBuilder);
+            if (WhereBuilder.Length > 0)
+                sql.AppendFormat(" WHERE {0}", WhereBuilder);
             if (OrderBy.Count > 0)
             {
                 var jsonOrderBy = new List<string>();

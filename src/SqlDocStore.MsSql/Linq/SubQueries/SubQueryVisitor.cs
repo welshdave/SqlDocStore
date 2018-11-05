@@ -3,8 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
-    using System.Reflection;
-    using System.Text;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
     using Remotion.Linq.Parsing;
@@ -12,30 +10,29 @@
 
     internal class SubQueryVisitor : RelinqExpressionVisitor
     {
-        protected StringBuilder _subQuery = new StringBuilder();
-        private readonly StringBuilder _whereClause = new StringBuilder();
         private readonly Type _docType;
         private readonly string _suffix;
+        private readonly MsSqlQueryParts _query;
 
-        public string SubQuery => _subQuery.ToString() + " WHERE " + _whereClause.ToString();
         public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
 
-        public SubQueryVisitor(Type docType)
+        public SubQueryVisitor(Type docType, MsSqlQueryParts query)
         {
             _docType = docType;
+            _query = query;
             _suffix = Guid.NewGuid().ToString().Replace("-", "");
         }
 
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
             var query = expression.QueryModel;
-            var queryType = query.MainFromClause.ItemType;
+            
             var fromExpression = query.MainFromClause.FromExpression as MemberExpression;
 
 
-            _subQuery.AppendFormat(
-                "CROSS APPLY OPENJSON(JSON_QUERY(Document, '$.{0}')) as subDocs_{1} ", fromExpression.Member.Name, _suffix);
-            _subQuery.AppendFormat("CROSS APPLY OPENJSON(subDocs_{0}.[value], '$') as SubDoc_{0} ", _suffix);
+            _query.FromBuilder.AppendFormat(
+                " CROSS APPLY OPENJSON(JSON_QUERY(Document, '$.{0}')) as subDocs_{1} ", fromExpression.Member.Name, _suffix);
+            _query.FromBuilder.AppendFormat("CROSS APPLY OPENJSON(subDocs_{0}.[value], '$') as SubDoc_{0} ", _suffix);
 
             foreach(var op in query.ResultOperators)
             {
@@ -50,7 +47,7 @@
 
         protected override Expression VisitBinary(BinaryExpression expression)
         {
-            _whereClause.Append("(");
+            _query.WhereBuilder.Append("(");
 
             //https://www.re-motion.org/blogs/mix/2009/10/16/vb-net-specific-text-comparison-in-linq-queries/
             expression = ExpressionHelper.ConvertVbStringCompare(expression);
@@ -66,11 +63,11 @@
             Visit(left);
             if (expression.NodeType == ExpressionType.NotEqual && right.IsNull())
             {
-                _whereClause.Append(" IS NOT NULL ");
+                _query.WhereBuilder.Append(" IS NOT NULL ");
             }
             else if (ExpressionHelper.Operators.ContainsKey(expression.NodeType))
             {
-                _whereClause.Append(ExpressionHelper.Operators[expression.NodeType]);
+                _query.WhereBuilder.Append(ExpressionHelper.Operators[expression.NodeType]);
             }
             else
             {
@@ -79,13 +76,13 @@
 
             if (!right.IsNull())
                 Visit(right);
-            _whereClause.Append(")");
+            _query.WhereBuilder.Append(")");
             return expression;
         }
 
         protected override Expression VisitMember(MemberExpression expression)
         {
-            _whereClause.AppendFormat("subDoc_{0}.[key] = '{1}' AND subDoc_{0}.[value]", _suffix, expression.Member.Name);
+            _query.WhereBuilder.AppendFormat("subDoc_{0}.[key] = '{1}' AND subDoc_{0}.[value]", _suffix, expression.Member.Name);
             return expression;
         }
 
@@ -94,7 +91,7 @@
 
             var name = $"@{Parameters.Count.ToString()}_{_suffix}";
             Parameters.Add(name, expression.Value);
-            _whereClause.Append(name);
+            _query.WhereBuilder.Append(name);
             return expression;
         }
 

@@ -178,7 +178,7 @@
 
                     await session.SaveChanges();
 
-                    var foundDoc = session.Query<Company>().Single(doc => doc.Officers.Any(p => p.PreferredName == "Person1-2"));
+                    var foundDoc = session.Query<Company>().Single(doc => doc.Officers.All(p => p.PreferredName == "Person1-2"));
 
                     foundDoc.Officers.ShouldContain(x => x.PreferredName == "Person1-2");
                     

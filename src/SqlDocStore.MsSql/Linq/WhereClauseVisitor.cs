@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Text;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
     using SqlDocStore.Linq;
@@ -12,23 +11,21 @@
 
     internal class WhereClauseVisitor : RelinqExpressionVisitor
     {
-        private readonly StringBuilder _whereClause = new StringBuilder();
         private readonly Type _docType;
+        private readonly MsSqlQueryParts _query;
 
-        
-        public WhereClauseVisitor(Type docType)
+
+        public WhereClauseVisitor(Type docType, MsSqlQueryParts query)
         {
             _docType = docType;
+            _query = query;
         }
-
-        public string WhereClause => _whereClause.ToString();
-        public string SubQuery { get; private set; }
 
         public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            _whereClause.Append("(");
+            _query.WhereBuilder.Append("(");
 
             //https://www.re-motion.org/blogs/mix/2009/10/16/vb-net-specific-text-comparison-in-linq-queries/
             node = ExpressionHelper.ConvertVbStringCompare(node);
@@ -44,11 +41,11 @@
             Visit(left);
             if (node.NodeType == ExpressionType.NotEqual && right.IsNull())
             {
-                _whereClause.Append(" IS NOT NULL ");
+                _query.WhereBuilder.Append(" IS NOT NULL ");
             }
             else if (ExpressionHelper.Operators.ContainsKey(node.NodeType))
             {
-                _whereClause.Append(ExpressionHelper.Operators[node.NodeType]);
+                _query.WhereBuilder.Append(ExpressionHelper.Operators[node.NodeType]);
             }
             else
             {
@@ -57,13 +54,13 @@
 
             if (!right.IsNull())
                 Visit(right);
-            _whereClause.Append(")");
+            _query.WhereBuilder.Append(")");
             return node;
         }
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            _whereClause.AppendFormat("JSON_VALUE(doc.Document, '$.{0}')",  node.Member.Name);
+            _query.WhereBuilder.AppendFormat("JSON_VALUE(doc.Document, '$.{0}')",  node.Member.Name);
             return node;
         }
 
@@ -72,16 +69,21 @@
 
             var name = $"@{Parameters.Count.ToString()}";
             Parameters.Add(name,node.Value);
-            _whereClause.Append(name);
+            _query.WhereBuilder.Append(name);
             return node;
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            throw new NotSupportedException(
+                $"SqlDocStore doesn't support Linq queries using the {node.Method.DeclaringType.FullName}.{node.Method.Name}() method");
         }
 
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
-            var visitor = new SubQueryVisitor(expression.QueryModel.MainFromClause.ItemType);
+            var visitor = new SubQueryVisitor(expression.QueryModel.MainFromClause.ItemType, _query);
             visitor.Visit(expression);
-
-            SubQuery = visitor.SubQuery;
+            
             visitor.Parameters.ToList().ForEach(x => Parameters.Add(x.Key, x.Value));
 
             return base.VisitSubQuery(expression);

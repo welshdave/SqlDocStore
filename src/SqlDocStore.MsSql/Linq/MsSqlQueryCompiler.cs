@@ -48,7 +48,7 @@
 
         public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
         {
-            _query.From = $"{_store.Settings.Schema}.{_store.Settings.Table} doc";
+            _query.FromBuilder.Append($"{_store.Settings.Schema}.{_store.Settings.Table} doc");
         }
 
         protected override void VisitBodyClauses(ObservableCollection<IBodyClause> bodyClauses, QueryModel queryModel)
@@ -56,10 +56,8 @@
             var wheres = bodyClauses.OfType<WhereClause>().ToList();
             foreach (var where in wheres)
             {
-                var whereVisitor = new WhereClauseVisitor(queryModel.MainFromClause.ItemType);
+                var whereVisitor = new WhereClauseVisitor(queryModel.MainFromClause.ItemType, _query);
                 whereVisitor.Visit(where.Predicate);
-                _query.Where = whereVisitor.WhereClause;
-                _query.SubQuery = whereVisitor.SubQuery;
                 _parameters = whereVisitor.Parameters;
             }
 
