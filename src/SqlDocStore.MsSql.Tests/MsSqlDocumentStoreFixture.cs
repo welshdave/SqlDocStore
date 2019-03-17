@@ -8,38 +8,22 @@
     public class MsSqlDocumentStoreFixture : DisposableBase
     {
         private readonly string _databaseName;
-        private readonly ILocalDbInstance _localDbInstance;
+        private readonly DockerMsSqlServerDatabase _databaseInstance;
         public readonly string ConnectionString;
 
         public MsSqlDocumentStoreFixture()
         {
-            _localDbInstance = new LocalDbInstance();
-
             _databaseName = $"DocStoreTests-{Guid.NewGuid()}";
-
-            ConnectionString = CreateConnectionString();
-        }
-
-        private string CreateConnectionString()
-        {
-            var connectionStringBuilder = _localDbInstance.CreateConnectionStringBuilder();
+            _databaseInstance = new DockerMsSqlServerDatabase(_databaseName);
+            var connectionStringBuilder = _databaseInstance.CreateConnectionStringBuilder();
             connectionStringBuilder.MultipleActiveResultSets = true;
-            connectionStringBuilder.IntegratedSecurity = true;
             connectionStringBuilder.InitialCatalog = _databaseName;
-
-            return connectionStringBuilder.ToString();
+            ConnectionString = connectionStringBuilder.ToString();
         }
 
         public async Task CreateDatabase()
         {
-            using (var connection = _localDbInstance.CreateConnection())
-            {
-                await connection.OpenAsync();
-                using (var command = new SqlCommand($"CREATE DATABASE  [{_databaseName}]", connection))
-                {
-                    await command.ExecuteNonQueryAsync();
-                }
-            }
+            await _databaseInstance.CreateDatabase();
         }
 
         public async Task<MsSqlDocumentStore> GetDocumentStore(ConcurrencyModel concurrencyModel = ConcurrencyModel.Optimistic)
@@ -64,9 +48,13 @@
                     SqlConnection.ClearPool(sqlConnection);
                 }
 
-                using (var connection = _localDbInstance.CreateConnection())
+                using (var connection = _databaseInstance.CreateConnection())
                 {
                     connection.Open();
+                    using (var command = new SqlCommand($"ALTER DATABASE [{_databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
                     using (var command = new SqlCommand($"DROP DATABASE [{_databaseName}]", connection))
                     {
                         command.ExecuteNonQuery();
