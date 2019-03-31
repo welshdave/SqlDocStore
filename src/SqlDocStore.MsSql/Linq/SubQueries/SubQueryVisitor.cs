@@ -10,13 +10,13 @@
 
     internal class SubQueryVisitor : WhereClauseVisitorBase
     {
-        private readonly string _suffix;
-
+        private string _currentSuffix;
+        private string _fromTemplate;
+        
         public Dictionary<string, object> Parameters { get; } = new Dictionary<string, object>();
 
         public SubQueryVisitor(Type docType, MsSqlQueryParts query) : base(docType, query)
         {
-            _suffix = Guid.NewGuid().ToString().Replace("-", "");
         }
 
         protected override Expression VisitSubQuery(SubQueryExpression expression)
@@ -25,10 +25,7 @@
 
             var fromExpression = query.MainFromClause.FromExpression as MemberExpression;
 
-
-            Query.FromBuilder.AppendFormat(
-                " CROSS APPLY OPENJSON(JSON_QUERY(Document, '$.{0}')) as subDocs_{1} ", fromExpression.Member.Name, _suffix);
-            Query.FromBuilder.AppendFormat("CROSS APPLY OPENJSON(subDocs_{0}.[value], '$') as SubDoc_{0} ", _suffix);
+            _fromTemplate = $" CROSS APPLY OPENJSON(JSON_QUERY(Document, '$.{fromExpression.Member.Name}')) as subDocs_%%SUFFIX%% CROSS APPLY OPENJSON (subDocs_%%SUFFIX%%.[value], '$') AS SubDoc_%%SUFFIX%% ";
 
             foreach (var op in query.ResultOperators)
             {
@@ -51,18 +48,20 @@
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            Query.WhereBuilder.AppendFormat("subDoc_{0}.[key] = '{1}' AND subDoc_{0}.[value]", _suffix, node.Member.Name);
+            _currentSuffix = Guid.NewGuid().ToString().Replace("-", "");
+
+            Query.FromBuilder.Append(_fromTemplate.Replace("%%SUFFIX%%", _currentSuffix));
+
+            Query.WhereBuilder.AppendFormat("subDoc_{0}.[key] = '{1}' AND subDoc_{0}.[value]", _currentSuffix, node.Member.Name);
             return node;
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-
-            var name = $"@{Parameters.Count.ToString()}_{_suffix}";
+            var name = $"@{Parameters.Count.ToString()}_{_currentSuffix}";
             Parameters.Add(name, node.Value);
             Query.WhereBuilder.Append(name);
             return node;
         }
-
     }
 }

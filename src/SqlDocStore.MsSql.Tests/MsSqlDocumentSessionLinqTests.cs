@@ -181,7 +181,26 @@
                     var foundDoc = session.Query<Company>().Single(doc => doc.Officers.Any(p => p.PreferredName == "Person1-2"));
 
                     foundDoc.Officers.ShouldContain(x => x.PreferredName == "Person1-2");
-                    
+                }
+            }
+        }
+
+        [Fact]
+        public async Task should_allow_querying_on_nested_document_with_multiple_properties()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore(ConcurrencyModel.Optimistic))
+                {
+                    var session = await store.CreateSession();
+
+                    GenerateAndStoreComplexDocs(10, session);
+
+                    await session.SaveChanges();
+
+                    var foundDoc = session.Query<Company>().Single(doc => doc.Officers.Any(p => p.PreferredName == "Person1-2" && p.FullName == "Person1-2"));
+
+                    foundDoc.Officers.ShouldContain(x => x.PreferredName == "Person1-2");
                 }
             }
         }
@@ -199,11 +218,11 @@
         {
             for (var i = 1; i <= numDocs; i++)
             {
-                var doc = new Company() {Id = i, Description = $"Description{i}", Name = $"{Guid.NewGuid()}"};
+                var doc = new Company() {Id = i, Description = $"Description{i}", Name = $"Company-{i}"};
                 var people = new List<Person>();
                 for (var j = 0; j < 5; j++)
                 {
-                    people.Add(new Person {Id = Guid.NewGuid(), DateOfBirth = DateTime.Now.AddYears(-50),FullName = $"{Guid.NewGuid()}", PreferredName = $"Person{i}-{j}"});
+                    people.Add(new Person {Id = Guid.NewGuid(), DateOfBirth = new DateTime(1950,1,1), FullName = $"Person{i}-{j}", PreferredName = $"Person{i}-{j}"});
                 }
 
                 doc.Officers = people;
