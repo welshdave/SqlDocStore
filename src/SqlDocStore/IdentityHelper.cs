@@ -36,22 +36,16 @@
             var info = GetIdProperty(document);
 
             if (info == null)
-                throw new InvalidOperationException($"Type {typeof(T)} does not have Identity property {Identity}");
+                throw new InvalidDocumentException($"Type {typeof(T)} does not have Identity property {Identity}");
             return info.GetValue(document);
         }
 
         internal static void ValidateDocumentId<T>(T document)
         {
-            if (document is IDynamicMetaObjectProvider)
-            {
-                ValidateDynamicDocumentId(document);
-                return;
-            }
-
             var info = GetIdProperty(document);
 
             if (info == null)
-                throw new InvalidOperationException($"Type {typeof(T)} does not have Identity property {Identity}");
+                throw new InvalidDocumentException($"Type {typeof(T)} does not have Identity property {Identity}");
 
             var propertyType = info.PropertyType;
 
@@ -77,7 +71,7 @@
 
             if (!AllowedTypes.Contains(propertyType))
             {
-                throw new InvalidOperationException(
+                throw new InvalidDocumentException(
                     $"Identity Property {Identity} for Type {typeof(T)} must be one of these Types: {AllowedTypes.Select(x => x.FullName).Aggregate((i, j) => i + "," + j)}");
             }
 
@@ -87,7 +81,7 @@
                 DefaultValues.GetOrAdd(propertyType, defaultValue);
             }
             if (defaultValue != null && defaultValue.Equals(info.GetValue(document)))
-                throw new InvalidOperationException($"Identity property {Identity} must be of non-default value");
+                throw new InvalidDocumentException($"Identity property {Identity} must be of non-default value");
         }
 
         private static void ValidateDynamicDocumentId(dynamic document)
@@ -98,7 +92,7 @@
             }
             catch
             {
-                throw new InvalidOperationException($"Dynamic document does not have Identity property {Identity}");
+                throw new InvalidDocumentException($"Dynamic document does not have Identity property {Identity}");
             }
         }
 
@@ -117,7 +111,7 @@
             }
             catch
             {
-                throw new InvalidOperationException($"Type {type} does not have Identity property {Identity}");
+                throw new InvalidDocumentException($"Type {type} does not have Identity property {Identity}");
             }
 
             return info as PropertyInfo;

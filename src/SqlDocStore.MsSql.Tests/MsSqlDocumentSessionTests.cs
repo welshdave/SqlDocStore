@@ -102,7 +102,7 @@
                     var autofixture = new Fixture();
                     var simple = autofixture.Create<SimpleDoc>();
                     simple.Id = 0;
-                    Should.Throw<InvalidOperationException>(() => session.Store(simple));
+                    Should.Throw<InvalidDocumentException>(() => session.Store(simple));
                 }
             }
         }
@@ -116,7 +116,7 @@
                 {
                     var session = await store.CreateSession();
                     var item = new {Name = "Item with no Id"};
-                    Should.Throw<InvalidOperationException>(() => session.Store(item));
+                    Should.Throw<InvalidDocumentException>(() => session.Store(item));
                 }
             }
         }
@@ -130,6 +130,36 @@
                 {
                     var session = await store.CreateSession();
                     Should.Throw<ArgumentNullException>(() => session.Store((Person) null));
+                }
+            }
+        }
+
+        [Fact]
+        public async Task should_fail_to_store_dynamic_object()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore())
+                {
+                    dynamic doc = new ExpandoObject();
+                    doc.Id = (new Random()).Next();
+                    doc.Title = $"Title{Guid.NewGuid()}";
+                    var session = await store.CreateSession();
+                    Should.Throw<InvalidDocumentException>(() => session.Store((object)doc));
+                }
+            }
+        }
+
+        [Fact]
+        public async Task should_fail_to_store_anonymous_document()
+        {
+            using (var fixture = GetFixture())
+            {
+                using (var store = await fixture.GetDocumentStore())
+                {
+                    var doc =  new {Id = Guid.NewGuid(), Title = $"Title{Guid.NewGuid()}" };
+                    var session = await store.CreateSession();
+                    Should.Throw<InvalidDocumentException>(() => session.Store(doc));
                 }
             }
         }
@@ -242,11 +272,6 @@
             yield return new object[] { fixture.Create<Person>() };
             yield return new object[] { fixture.Create<Company>() };
             yield return new object[] { fixture.Create<AnotherDoc>() };
-            yield return new object[] { new {Id = Guid.NewGuid(), Title = $"Title{Guid.NewGuid()}" }};
-            dynamic doc = new ExpandoObject();
-            doc.Id = (new Random()).Next();
-            doc.Title = $"Title{Guid.NewGuid()}";
-            yield return new object[] { doc };
         }
     }
 }

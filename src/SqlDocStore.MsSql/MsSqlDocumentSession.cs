@@ -7,7 +7,6 @@
     using System.Threading.Tasks;
     using Remotion.Linq;
     using Sql;
-    using SqlDocStore.Linq;
     using MsSqlQueryExecutor = Linq.MsSqlQueryExecutor;
 
     public class MsSqlDocumentSession : DocumentSessionBase
@@ -18,7 +17,7 @@
         private const int ConcurrencyError = 50001;
         private const int DocumentExists = 50002;
         private readonly ISerializer _serializer = new SimpleJsonSerializer();
-
+        
         public MsSqlDocumentSession(Func<SqlConnection> createConnection, IDocumentStore store)
         {
             _createConnection = createConnection;

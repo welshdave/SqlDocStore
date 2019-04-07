@@ -159,7 +159,7 @@
             var changeTracker = GetChangeTracker(ConcurrencyModel.Pessimistic);
             var fixture = new Fixture();
             var invalidDoc = fixture.Create<InvalidDoc>();
-            Should.Throw(() => { changeTracker.Track(invalidDoc, Guid.NewGuid()); }, typeof(InvalidOperationException));
+            Should.Throw(() => { changeTracker.Track(invalidDoc, Guid.NewGuid()); }, typeof(InvalidDocumentException));
         }
     }
 }

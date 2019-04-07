@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Dynamic;
     using System.Threading;
     using System.Threading.Tasks;
     using Linq;
@@ -72,6 +73,8 @@
         {
             CheckNotDisposed();
             if (document == null) throw new ArgumentNullException(nameof(document));
+            if (document is IDynamicMetaObjectProvider) throw new InvalidDocumentException("Document cannot be Dynamic");
+            if (document.GetType().IsAnonymousType()) throw new InvalidDocumentException("Document cannot be Anonymous");
             IdentityHelper.ValidateDocumentId(document);
             StoreInternal(document);
         }
