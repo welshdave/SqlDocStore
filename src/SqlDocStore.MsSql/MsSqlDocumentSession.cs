@@ -68,6 +68,7 @@
                         {
                             command.Transaction = tran;
                             command.Parameters.AddWithValue("@document", json);
+                            command.Parameters.AddWithValue("@type", document.GetType().FullName);
                             await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
                         }
                     }
@@ -96,6 +97,7 @@
                                 command.Transaction = tran;
                                 command.Parameters.AddWithValue("@document", json);
                                 command.Parameters.AddWithValue("@etag", ChangeTracker.Documents[id].ETag);
+                                command.Parameters.AddWithValue("@type", document.GetType().FullName);
                                 await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
                             }
                         }

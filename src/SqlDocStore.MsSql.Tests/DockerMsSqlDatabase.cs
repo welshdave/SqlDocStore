@@ -31,7 +31,7 @@ namespace SqlDocStore.MsSql.Tests
                 HealthCheck,
                 ports)
             {
-                ContainerName = "sql-stream-store-tests-mssql",
+                ContainerName = "sql-doc-store-tests-mssql",
                 Env = new[] { "ACCEPT_EULA=Y", $"SA_PASSWORD={Password}" }
             };
         }

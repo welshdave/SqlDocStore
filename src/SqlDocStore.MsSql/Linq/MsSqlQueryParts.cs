@@ -9,7 +9,7 @@
         public MsSqlQueryParts()
         {
             OrderBy = new List<MsSqlOrderBy>();
-            Fields = new List<string> {"doc.Document", "doc.Etag"};
+            Fields = new List<string> {"doc.Document", "doc.Etag", "doc.Type"};
             FromBuilder = new StringBuilder();
             WhereBuilder = new StringBuilder();
         }

@@ -4,5 +4,5 @@ IF EXISTS (SELECT 1 FROM {@schema_name}.{@table_name} WHERE vId = @id)
 
 DECLARE @newETag UNIQUEIDENTIFIER = newid()
 
-INSERT INTO {@schema_name}.{@table_name} (Document, ETag) VALUES (@document, @etag)
+INSERT INTO {@schema_name}.{@table_name} (Document, ETag, [Type]) VALUES (@document, @etag, @type)
 

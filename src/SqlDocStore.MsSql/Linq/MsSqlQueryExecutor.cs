@@ -5,6 +5,7 @@
     using System.Data.SqlClient;
     using System.Linq;
     using Remotion.Linq;
+    using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.ResultOperators;
     using SqlDocStore.Linq;
 
@@ -68,9 +69,13 @@
                     {
                         while (reader.Read())
                         {
-                            var doc = _serializer.Deserialize<T>(reader["Document"].ToString());
-                            var eTag = Guid.Parse(reader["ETag"].ToString());
-                            docs.Add(new Tuple<T, Guid>(doc,eTag));
+                            var type = reader["Type"].ToString();
+                            if (type == typeof(T).FullName)
+                            { 
+                                var doc = _serializer.Deserialize<T>(reader["Document"].ToString());
+                                var eTag = Guid.Parse(reader["ETag"].ToString());
+                                docs.Add(new Tuple<T, Guid>(doc,eTag));
+                            }
                         }
                     }
                     catch (FormatException)

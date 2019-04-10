@@ -3,6 +3,7 @@ BEGIN
 	CREATE TABLE {@schema_name}.{@table_name} (
 		Document NVARCHAR(MAX),
 		ETag UNIQUEIDENTIFIER,
+		[Type] NVARCHAR(MAX),
 		CONSTRAINT [Document must be formatted as JSON]
 		CHECK (ISJSON(Document)>0),
 		vId AS JSON_VALUE(Document,'$.Id')
