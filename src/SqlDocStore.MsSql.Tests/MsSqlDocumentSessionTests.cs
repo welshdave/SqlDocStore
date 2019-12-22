@@ -11,13 +11,8 @@
     using SqlDocStore.Tests.Documents;
     using Xunit;
 
-    public class MsSqlDocumentSessionTests
+    public class MsSqlDocumentSessionTests : MsSqlDocumentSessionTestsBase
     {
-        private MsSqlDocumentStoreFixture GetFixture()
-        {
-            return new MsSqlDocumentStoreFixture();
-        }
-        
         [Fact]
         public async Task should_add_document_to_pending_changes()
         {

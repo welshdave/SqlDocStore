@@ -8,13 +8,8 @@
     using SqlDocStore.Tests.Documents;
     using Xunit;
 
-    public class MsSqlDocumentSessionLinqTests
+    public class MsSqlDocumentSessionLinqTests : MsSqlDocumentSessionTestsBase
     {
-        private MsSqlDocumentStoreFixture GetFixture()
-        {
-            return new MsSqlDocumentStoreFixture();
-        }
-
         [Fact]
         public async Task single_should_be_queryable()
         {
@@ -202,31 +197,6 @@
 
                     foundDoc.Officers.ShouldContain(x => x.PreferredName == "Person1-2");
                 }
-            }
-        }
-
-        private void GenerateAndStoreDocs(int numDocs, IDocumentSession session)
-        {
-            for (var i = 1; i <= numDocs; i++)
-            {
-                var doc = new SimpleDoc() { Id = i, Description = $"Description{i}" };
-                session.Store(doc);
-            }
-        }
-
-        private void GenerateAndStoreComplexDocs(int numDocs, IDocumentSession session)
-        {
-            for (var i = 1; i <= numDocs; i++)
-            {
-                var doc = new Company() {Id = i, Description = $"Description{i}", Name = $"Company-{i}"};
-                var people = new List<Person>();
-                for (var j = 0; j < 5; j++)
-                {
-                    people.Add(new Person {Id = Guid.NewGuid(), DateOfBirth = new DateTime(1950,1,1), FullName = $"Person{i}-{j}", PreferredName = $"Person{i}-{j}"});
-                }
-
-                doc.Officers = people;
-                session.Store(doc);
             }
         }
     }
